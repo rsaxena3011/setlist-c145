@@ -1,4 +1,4 @@
-# SetList — on-set script to shotlist (Firebase AI Logic hybrid inference)
+# SetList - on-set script to shotlist (Firebase AI Logic hybrid inference)
 
 Built for **#BuildHybridAI 2026** (C145), Web/Chrome lane, targeting Best Web/Chrome App.
 
