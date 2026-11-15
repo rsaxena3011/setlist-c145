@@ -136,7 +136,13 @@ async function generateWithFirebase(ai, text, route, longForm) {
       $('engine-badge').textContent = `Downloading on-device model: ${Math.round(p * 100)}%`;
     });
     const result = await deviceModel.generateContent(prompt);
-    return { parsed: parseModelJson(result.response.text()), inferenceSource: result.response.inferenceSource || 'on_device', engine: 'ON_DEVICE (Gemini Nano)' };
+    const rawText = result.response.text();
+    try {
+      return { parsed: parseModelJson(rawText), rawText: null, inferenceSource: result.response.inferenceSource || 'on_device', engine: 'ON_DEVICE (Gemini Nano)' };
+    } catch (parseError) {
+      // Model answered but not as shotlist JSON: show its raw text, do not invent shots.
+      return { parsed: null, rawText, inferenceSource: result.response.inferenceSource || 'on_device', engine: 'ON_DEVICE (Gemini Nano)' };
+    }
   }
   const cloudModel = getGenerativeModel(ai, {
     mode: InferenceMode.ONLY_IN_CLOUD,
@@ -146,7 +152,12 @@ async function generateWithFirebase(ai, text, route, longForm) {
     },
   });
   const result = await cloudModel.generateContent(prompt);
-  return { parsed: parseModelJson(result.response.text()), inferenceSource: result.response.inferenceSource || 'in_cloud', engine: 'CLOUD (Gemini 2.5 Flash)' };
+  const rawText = result.response.text();
+  try {
+    return { parsed: parseModelJson(rawText), rawText: null, inferenceSource: result.response.inferenceSource || 'in_cloud', engine: 'CLOUD (Gemini 2.5 Flash)' };
+  } catch (parseError) {
+    return { parsed: null, rawText, inferenceSource: result.response.inferenceSource || 'in_cloud', engine: 'CLOUD (Gemini 2.5 Flash)' };
+  }
 }
 
 // ------------------------------------------------------------- UI rendering --
@@ -293,11 +304,12 @@ async function generate() {
       return;
     }
     try {
-      const { parsed, inferenceSource, engine } = await generateWithFirebase(fb.ai, text, route, longForm);
+      const { parsed, rawText, inferenceSource, engine } = await generateWithFirebase(fb.ai, text, route, longForm);
       const ms = Math.round(performance.now() - t0);
       lastResult = parsed; lastEngine = engine;
-      renderResults(parsed, engine, `SDK inferenceSource: ${inferenceSource}.`);
-      addLogEntry({ time: new Date().toLocaleTimeString(), input: lastInputLabel, chars, route, engineServed: `${engine} [${inferenceSource}]`, latencyMs: ms, note: route === 'ON_DEVICE_FIRST' ? 'On-device attempt succeeded.' : 'Cloud path.' });
+      if (parsed) renderResults(parsed, engine, `SDK inferenceSource: ${inferenceSource}.`);
+      else renderRawText(rawText, engine, 'Model reply was not shotlist JSON; shown as text, no shots invented.');
+      addLogEntry({ time: new Date().toLocaleTimeString(), input: lastInputLabel, chars, route, engineServed: `${engine} [${inferenceSource}]`, latencyMs: ms, note: parsed ? (route === 'ON_DEVICE_FIRST' ? 'On-device attempt succeeded.' : 'Cloud path.') : 'Model reply was not shotlist JSON.' });
     } catch (deviceError) {
       // On-device attempt failed (model unavailable, download blocked, etc.):
       // log the failure honestly, then answer from the cloud.
@@ -305,10 +317,11 @@ async function generate() {
       const reason = String((deviceError && deviceError.message) || deviceError);
       addLogEntry({ time: new Date().toLocaleTimeString(), input: lastInputLabel, chars, route, engineServed: 'ON-DEVICE ATTEMPT FAILED', latencyMs: failMs, note: reason.slice(0, 160) });
       $('engine-badge').textContent = `On-device attempt failed (${reason.slice(0, 120)}). Falling back to the cloud...`;
-      const { parsed, inferenceSource, engine } = await generateWithFirebase(fb.ai, text, 'CLOUD_ONLY', longForm);
+      const { parsed, rawText, inferenceSource, engine } = await generateWithFirebase(fb.ai, text, 'CLOUD_ONLY', longForm);
       const ms = Math.round(performance.now() - t0);
       lastResult = parsed; lastEngine = engine;
-      renderResults(parsed, engine, `SDK inferenceSource: ${inferenceSource}. On-device failed first; see log.`);
+      if (parsed) renderResults(parsed, engine, `SDK inferenceSource: ${inferenceSource}. On-device failed first; see log.`);
+      else renderRawText(rawText, engine, 'Model reply was not shotlist JSON; shown as text, no shots invented. On-device failed first; see log.');
       addLogEntry({ time: new Date().toLocaleTimeString(), input: lastInputLabel, chars, route: 'CLOUD FALLBACK', engineServed: `${engine} [${inferenceSource}]`, latencyMs: ms, note: 'Cloud fallback after on-device failure.' });
     }
   } catch (e) {
