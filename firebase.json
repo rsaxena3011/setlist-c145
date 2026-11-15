@@ -1,0 +1,1 @@
+{"hosting":{"headers":[{"headers":[{"key":"Content-Type","value":"text/javascript"}],"source":"**/*.@(js|mjs)"}],"ignore":["firebase.json","**/.*","**/node_modules/**","tests/**"],"public":"."}}

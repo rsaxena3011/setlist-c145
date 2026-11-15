@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SetList - on-set script to shotlist (Firebase AI Logic hybrid)</title>
+<meta name="description" content="SetList turns a script or brief into a shotlist. Short inputs run on-device with Gemini Nano, long scripts go to the cloud, one Firebase AI Logic SDK.">
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="styles.css">
+<script type="importmap">
+{
+  "imports": {
+    "firebase/app": "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js",
+    "firebase/ai": "https://www.gstatic.com/firebasejs/12.19.0/firebase-ai.js",
+    "firebase/app-check": "https://www.gstatic.com/firebasejs/12.19.0/firebase-app-check.js",
+    "firebase/firestore": "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js"
+  }
+}
+</script>
+</head>
+<body>
+<header>
+  <h1>SetList</h1>
+  <p class="tagline">Paste a script on set. Get the shotlist. Short on-device, long in the cloud, same app.</p>
+  <div class="status-row">
+    <span id="firebase-status" class="pill pill-demo">Firebase: not connected (demo mode)</span>
+    <span id="online-status" class="pill">Online: checking</span>
+    <span id="device-status" class="pill">On-device model: not checked yet</span>
+  </div>
+  <p id="mode-note" class="mode-note"></p>
+</header>
+
+<main>
+  <section class="card">
+    <h2>1. Your script or brief</h2>
+    <label for="input-text">Script / brief (plain text, English)</label>
+    <textarea id="input-text" rows="10" placeholder="Paste a script or a short brief here, or load a bundled demo input below."></textarea>
+    <div class="row">
+      <span id="char-count">0 characters</span>
+      <span id="route-hint">Route: type or load an input to see the routing decision.</span>
+    </div>
+    <div class="row buttons">
+      <button id="load-short" type="button">Load short brief (on-device path)</button>
+      <button id="load-long" type="button">Load long script (cloud path)</button>
+      <button id="generate" type="button" class="primary">Generate shotlist</button>
+    </div>
+    <div class="row buttons">
+      <button id="check-device" type="button">Check on-device model in this browser</button>
+      <span id="device-check-result" class="muted"></span>
+    </div>
+    <p class="muted">How routing works: inputs up to 600 characters are attempted on-device first
+      with Gemini Nano (Firebase AI Logic, ONLY_ON_DEVICE); if the model is unavailable
+      the attempt is logged and the cloud answers instead. Longer inputs go straight to
+      the cloud (Gemini 2.5 Flash) for the full breakdown and call sheet. Every answer is
+      logged below with the engine that served it and its latency.</p>
+  </section>
+
+  <section class="card">
+    <h2>2. Shotlist</h2>
+    <div id="engine-badge" class="muted">No shotlist yet.</div>
+    <div id="results"></div>
+    <div class="row buttons">
+      <button id="save-shotlist" type="button" disabled>Save this shotlist</button>
+      <span id="save-result" class="muted"></span>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>3. Routing log</h2>
+    <p class="muted">Which engine answered which input, with latency. This is the hybrid story,
+      shown, not asserted.</p>
+    <table id="routing-log">
+      <thead><tr><th>Time</th><th>Input</th><th>Chars</th><th>Route</th><th>Engine served</th><th>Latency</th><th>Note</th></tr></thead>
+      <tbody><tr><td colspan="7" class="muted">No runs yet.</td></tr></tbody>
+    </table>
+  </section>
+
+  <section class="card">
+    <h2>4. Saved shotlists</h2>
+    <p class="muted">Saved to Firestore when Firebase is connected, otherwise kept in this
+      browser only (localStorage). No sign-in is required.</p>
+    <ul id="saved-list"><li class="muted">Nothing saved yet.</li></ul>
+  </section>
+</main>
+
+<footer>
+  <p>SetList for #BuildHybridAI 2026. Built with Firebase AI Logic hybrid inference
+    (on-device Gemini Nano + cloud Gemini 2.5 Flash), Firebase App Check and Firestore.
+    Free to use. Source and setup steps: see README in the repo.</p>
+</footer>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>
