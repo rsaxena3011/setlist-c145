@@ -4,13 +4,15 @@
 //   short input (<= 600 chars) -> on-device first (Gemini Nano, ONLY_ON_DEVICE,
 //     after initializeDeviceModel on the user's click). If the model is
 //     unavailable the attempt is logged honestly and the cloud answers instead.
-//   long input  (> 600 chars)  -> cloud only (Gemini 2.5 Flash, ONLY_IN_CLOUD)
+//   long input  (> 600 chars)  -> cloud only (Gemini 3.8 Flash, ONLY_IN_CLOUD)
 //     for the full breakdown and call sheet.
 // Every answer is logged with the engine that served it, the SDK-reported
 // inferenceSource when available, and latency.
 //
-// DEMO MODE: firebase-config.js still holds placeholders, so no Firebase call is
-// attempted. Shotlists come from the rule-based local parser (local-parser.js),
+// LIVE MODE: firebase-config.js holds the real Firebase project (setlist-96961,
+// free Spark plan), so the app runs real hybrid inference. If the config is
+// removed, it falls back to the labelled local stand-in parser in demo mode:
+// shotlists then come from the rule-based local parser (local-parser.js),
 // labelled LOCAL PARSER (stand-in) everywhere. That label is load-bearing: the
 // stand-in is never presented as Gemini Nano or cloud output.
 //
