@@ -23,7 +23,7 @@ import { FIREBASE_CONFIGURED, FIREBASE_CONFIG, RECAPTCHA_V3_SITE_KEY } from './f
 import { SHORT_BRIEF, LONG_SCRIPT, SHORT_MAX_CHARS } from './demo-inputs.js';
 import { parseShotlistLocally, decideRoute } from './local-parser.js';
 
-const CLOUD_MODEL = 'gemini-2.5-flash';
+const CLOUD_MODEL = 'gemini-3.8-flash';
 const $ = (id) => document.getElementById(id);
 
 let fb = null; // { app, ai, db } once Firebase is initialised, else null (demo mode)
@@ -156,9 +156,9 @@ async function generateWithFirebase(ai, text, route, longForm) {
   const result = await cloudModel.generateContent(prompt);
   const rawText = result.response.text();
   try {
-    return { parsed: parseModelJson(rawText), rawText: null, inferenceSource: result.response.inferenceSource || 'in_cloud', engine: 'CLOUD (Gemini 2.5 Flash)' };
+    return { parsed: parseModelJson(rawText), rawText: null, inferenceSource: result.response.inferenceSource || 'in_cloud', engine: 'CLOUD (Gemini 3.8 Flash)' };
   } catch (parseError) {
-    return { parsed: null, rawText, inferenceSource: result.response.inferenceSource || 'in_cloud', engine: 'CLOUD (Gemini 2.5 Flash)' };
+    return { parsed: null, rawText, inferenceSource: result.response.inferenceSource || 'in_cloud', engine: 'CLOUD (Gemini 3.8 Flash)' };
   }
 }
 
