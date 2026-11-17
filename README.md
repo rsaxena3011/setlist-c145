@@ -12,7 +12,7 @@ on-device; hand the long script to the cloud for the full breakdown. One SDK, bo
   via Firebase AI Logic (`InferenceMode.ONLY_ON_DEVICE`, after `initializeDeviceModel`
   on the user's click). If the model is unavailable, the attempt is logged and the
   cloud answers instead.
-- **Long inputs (over 600 chars)** go straight to the **cloud** (Gemini 2.5 Flash,
+- **Long inputs (over 600 chars)** go straight to the **cloud** (Gemini 3.5 Flash-Lite,
   `InferenceMode.ONLY_IN_CLOUD`) for the full breakdown and call sheet.
 - A **routing log** in the UI shows which engine answered which input, with latency
   and the SDK-reported `inferenceSource`.
@@ -84,7 +84,7 @@ node tests/smoke.mjs                # headless-Chrome UI smoke test + screenshot
 - Firebase JS SDK 12.19.0 via CDN import map (hybrid inference needs 12.5.0+).
 - `firebase/app`, `firebase/ai` (`getAI`, `GoogleAIBackend`, `getGenerativeModel`,
   `InferenceMode`, `Schema`), `firebase/app-check`, `firebase/firestore`.
-- Cloud model: `gemini-2.5-flash`. On-device model: Gemini Nano via Chrome Prompt API.
+- Cloud model: `gemini-3.5-flash-lite`. On-device model: Gemini Nano via Chrome Prompt API.
 - No auth, no paid tier, no image generation, no second platform.
 
 ## Licence
