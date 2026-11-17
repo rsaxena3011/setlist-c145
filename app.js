@@ -32,6 +32,7 @@ let fb = null; // { app, ai, db } once Firebase is initialised, else null (demo 
 let fbError = '';
 let lastResult = null;
 let lastEngine = '';
+let lastResultLabel = '';
 let lastInputLabel = 'pasted input';
 const routingLog = [];
 const savedLocalKey = 'setlist-saved-v1';
@@ -229,7 +230,7 @@ async function saveShotlist() {
   if (!lastResult) return;
   const record = {
     title: lastResult.title || 'Shotlist',
-    inputLabel: lastInputLabel,
+    inputLabel: lastResultLabel || lastInputLabel,
     engine: lastEngine,
     createdAt: new Date().toISOString(),
     result: lastResult,
@@ -306,6 +307,11 @@ async function generate() {
   const btn = $('generate');
   if (!text) { $('engine-badge').textContent = 'Paste a script or brief first, or load a demo input.'; return; }
   const chars = text.length;
+  // Capture the label of THIS input now: the cloud-fallback log below runs
+  // after a long await, and lastInputLabel may have changed by then
+  // (2026-11-17 capture: the fallback row was mislabelled "long script"
+  // because #load-long had been clicked meanwhile).
+  const inputLabel = lastInputLabel;
   const route = decideRoute(chars, SHORT_MAX_CHARS);
   const longForm = route === 'CLOUD_ONLY';
   const t0 = performance.now();
@@ -315,36 +321,36 @@ async function generate() {
     if (!fb) {
       const parsed = parseShotlistLocally(text);
       const ms = Math.round(performance.now() - t0);
-      lastResult = parsed; lastEngine = 'LOCAL PARSER (stand-in)';
+      lastResult = parsed; lastEngine = 'LOCAL PARSER (stand-in)'; lastResultLabel = inputLabel;
       renderResults(parsed, lastEngine, 'Demo mode: rule-based stand-in, not Gemini Nano and not the cloud.');
-      addLogEntry({ time: new Date().toLocaleTimeString(), input: lastInputLabel, chars, route, engineServed: 'LOCAL PARSER (stand-in)', latencyMs: ms, note: fbError ? `Firebase init failed: ${fbError}` : 'Firebase not connected.' });
+      addLogEntry({ time: new Date().toLocaleTimeString(), input: inputLabel, chars, route, engineServed: 'LOCAL PARSER (stand-in)', latencyMs: ms, note: fbError ? `Firebase init failed: ${fbError}` : 'Firebase not connected.' });
       return;
     }
     try {
       const { parsed, rawText, inferenceSource, engine } = await generateWithFirebase(fb.ai, text, route, longForm);
       const ms = Math.round(performance.now() - t0);
-      lastResult = parsed; lastEngine = engine;
+      lastResult = parsed; lastEngine = engine; lastResultLabel = inputLabel;
       if (parsed) renderResults(parsed, engine, `SDK inferenceSource: ${inferenceSource}.`);
       else renderRawText(rawText, engine, 'Model reply was not shotlist JSON; shown as text, no shots invented.');
-      addLogEntry({ time: new Date().toLocaleTimeString(), input: lastInputLabel, chars, route, engineServed: `${engine} [${inferenceSource}]`, latencyMs: ms, note: parsed ? (route === 'ON_DEVICE_FIRST' ? 'On-device attempt succeeded.' : 'Cloud path.') : 'Model reply was not shotlist JSON.' });
+      addLogEntry({ time: new Date().toLocaleTimeString(), input: inputLabel, chars, route, engineServed: `${engine} [${inferenceSource}]`, latencyMs: ms, note: parsed ? (route === 'ON_DEVICE_FIRST' ? 'On-device attempt succeeded.' : 'Cloud path.') : 'Model reply was not shotlist JSON.' });
     } catch (deviceError) {
       // On-device attempt failed (model unavailable, download blocked, etc.):
       // log the failure honestly, then answer from the cloud.
       const failMs = Math.round(performance.now() - t0);
       const reason = String((deviceError && deviceError.message) || deviceError);
-      addLogEntry({ time: new Date().toLocaleTimeString(), input: lastInputLabel, chars, route, engineServed: 'ON-DEVICE ATTEMPT FAILED', latencyMs: failMs, note: reason.slice(0, 160) });
+      addLogEntry({ time: new Date().toLocaleTimeString(), input: inputLabel, chars, route, engineServed: 'ON-DEVICE ATTEMPT FAILED', latencyMs: failMs, note: reason.slice(0, 160) });
       $('engine-badge').textContent = `On-device attempt failed (${reason.slice(0, 120)}). Falling back to the cloud...`;
       const { parsed, rawText, inferenceSource, engine } = await generateWithFirebase(fb.ai, text, 'CLOUD_ONLY', longForm);
       const ms = Math.round(performance.now() - t0);
-      lastResult = parsed; lastEngine = engine;
+      lastResult = parsed; lastEngine = engine; lastResultLabel = inputLabel;
       if (parsed) renderResults(parsed, engine, `SDK inferenceSource: ${inferenceSource}. On-device failed first; see log.`);
       else renderRawText(rawText, engine, 'Model reply was not shotlist JSON; shown as text, no shots invented. On-device failed first; see log.');
-      addLogEntry({ time: new Date().toLocaleTimeString(), input: lastInputLabel, chars, route: 'CLOUD FALLBACK', engineServed: `${engine} [${inferenceSource}]`, latencyMs: ms, note: 'Cloud fallback after on-device failure.' });
+      addLogEntry({ time: new Date().toLocaleTimeString(), input: inputLabel, chars, route: 'CLOUD FALLBACK', engineServed: `${engine} [${inferenceSource}]`, latencyMs: ms, note: 'Cloud fallback after on-device failure.' });
     }
   } catch (e) {
     const ms = Math.round(performance.now() - t0);
     $('engine-badge').textContent = `Generation failed: ${(e && e.message) || e}`;
-    addLogEntry({ time: new Date().toLocaleTimeString(), input: lastInputLabel, chars, route, engineServed: 'FAILED', latencyMs: ms, note: String((e && e.message) || e).slice(0, 160) });
+    addLogEntry({ time: new Date().toLocaleTimeString(), input: inputLabel, chars, route, engineServed: 'FAILED', latencyMs: ms, note: String((e && e.message) || e).slice(0, 160) });
   } finally {
     btn.disabled = false;
   }
