@@ -47,17 +47,19 @@ async function initFirebase() {
   try {
     const { initializeApp } = await import('firebase/app');
     const { getAI, GoogleAIBackend } = await import('firebase/ai');
-    const { initializeAppCheck, ReCaptchaV3Provider } = await import('firebase/app-check');
+    const { initializeAppCheck, ReCaptchaEnterpriseProvider } = await import('firebase/app-check');
     const { getFirestore } = await import('firebase/firestore');
     const app = initializeApp(FIREBASE_CONFIG);
     // App Check: debug provider on localhost (register the printed debug token in
-    // the console), reCAPTCHA v3 on the deployed site. Enforced by the AI Logic
-    // guided setup; debug tokens are accepted for submissions.
+    // the console), Fraud Defense (reCAPTCHA Enterprise) on the deployed site.
+    // Classic reCAPTCHA v3 registration is deprecated in the console, so the
+    // app is registered under Fraud Defense — use ReCaptchaEnterpriseProvider.
+    // Enforced by the AI Logic guided setup; debug tokens are accepted for submissions.
     if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
       self.FIREBASE_APPCHECK_DEBUG_TOKEN = true;
     }
     initializeAppCheck(app, {
-      provider: new ReCaptchaV3Provider(RECAPTCHA_V3_SITE_KEY),
+      provider: new ReCaptchaEnterpriseProvider(RECAPTCHA_V3_SITE_KEY),
       isTokenAutoRefreshEnabled: true,
     });
     const ai = getAI(app, { backend: new GoogleAIBackend() });
