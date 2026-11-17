@@ -4,7 +4,7 @@
 //   short input (<= 600 chars) -> on-device first (Gemini Nano, ONLY_ON_DEVICE,
 //     after initializeDeviceModel on the user's click). If the model is
 //     unavailable the attempt is logged honestly and the cloud answers instead.
-//   long input  (> 600 chars)  -> cloud only (Gemini 3.8 Flash, ONLY_IN_CLOUD)
+//   long input  (> 600 chars)  -> cloud only (Gemini 3.5 Flash-Lite, ONLY_IN_CLOUD)
 //     for the full breakdown and call sheet.
 // Every answer is logged with the engine that served it, the SDK-reported
 // inferenceSource when available, and latency.
@@ -25,7 +25,7 @@ import { FIREBASE_CONFIGURED, FIREBASE_CONFIG, RECAPTCHA_V3_SITE_KEY } from './f
 import { SHORT_BRIEF, LONG_SCRIPT, SHORT_MAX_CHARS } from './demo-inputs.js';
 import { parseShotlistLocally, decideRoute } from './local-parser.js';
 
-const CLOUD_MODEL = 'gemini-3.8-flash';
+const CLOUD_MODEL = 'gemini-3.5-flash-lite';
 const $ = (id) => document.getElementById(id);
 
 let fb = null; // { app, ai, db } once Firebase is initialised, else null (demo mode)
@@ -125,6 +125,19 @@ function parseModelJson(rawText) {
   return parsed;
 }
 
+// A stalled model call must surface as an error, never hang the UI with
+// Generate disabled. 60 s is generous for a flash model on a small prompt.
+// (2026-11-17: gemini-3.8-flash hung twice with no response and no error, so
+// the cloud model moved to the lighter gemini-3.5-flash-lite and every
+// generateContent call got this timeout.)
+function withTimeout(promise, ms, label) {
+  let timer;
+  const timeout = new Promise((_, reject) => {
+    timer = setTimeout(() => reject(new Error(`${label} timed out after ${ms / 1000}s with no response`)), ms);
+  });
+  return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
+}
+
 async function generateWithFirebase(ai, text, route, longForm) {
   // Dynamic import keeps the Firebase SDK load tied to the live path only.
   const { getGenerativeModel, InferenceMode, Schema } = await import('firebase/ai');
@@ -139,7 +152,7 @@ async function generateWithFirebase(ai, text, route, longForm) {
     await deviceModel.initializeDeviceModel((p) => {
       $('engine-badge').textContent = `Downloading on-device model: ${Math.round(p * 100)}%`;
     });
-    const result = await deviceModel.generateContent(prompt);
+    const result = await withTimeout(deviceModel.generateContent(prompt), 60000, 'On-device generation');
     const rawText = result.response.text();
     try {
       return { parsed: parseModelJson(rawText), rawText: null, inferenceSource: result.response.inferenceSource || 'on_device', engine: 'ON_DEVICE (Gemini Nano)' };
@@ -155,12 +168,12 @@ async function generateWithFirebase(ai, text, route, longForm) {
       generationConfig: { responseMimeType: 'application/json', responseSchema: schema },
     },
   });
-  const result = await cloudModel.generateContent(prompt);
+  const result = await withTimeout(cloudModel.generateContent(prompt), 60000, `Cloud generation (${CLOUD_MODEL})`);
   const rawText = result.response.text();
   try {
-    return { parsed: parseModelJson(rawText), rawText: null, inferenceSource: result.response.inferenceSource || 'in_cloud', engine: 'CLOUD (Gemini 3.8 Flash)' };
+    return { parsed: parseModelJson(rawText), rawText: null, inferenceSource: result.response.inferenceSource || 'in_cloud', engine: 'CLOUD (Gemini 3.5 Flash-Lite)' };
   } catch (parseError) {
-    return { parsed: null, rawText, inferenceSource: result.response.inferenceSource || 'in_cloud', engine: 'CLOUD (Gemini 3.8 Flash)' };
+    return { parsed: null, rawText, inferenceSource: result.response.inferenceSource || 'in_cloud', engine: 'CLOUD (Gemini 3.5 Flash-Lite)' };
   }
 }
 
