@@ -1,0 +1,555 @@
+# C109 Re-Run — R2 Review Brief (re-review of the REVISED results + draft verdict)
+
+**Competition:** C109 Memecoins (Kaggle pump-or-dump). **Round:** R2 — hostile re-review.
+**Under review:** `RE_RUN_RESULTS_REVISED_2026-11-18.md` (54,044 bytes, md5 8ffa13341041d26ffdb11faae55065bc), embedded verbatim below, plus its fix record `RE_RUN_FIX_RECORD_2026-11-18.md` (22,805 bytes, md5 af717aa6d0238efe299fc17b5d109e93), also embedded verbatim below.
+
+**Context.** The re-run's draft results (RE_RUN_RESULTS_2026-11-18.md, 26,437 bytes) were hostile-reviewed in R1 by three legs — Gemini (9 defects), Notion (18 defects), GPT (19 defects). All three ruled APPROVE WITH CHANGES and NO EDGE, keep v1 skip-all. A fix coordinator then fixed ALL 13 deduplicated defect clusters, recomputed every number from the saved artifacts (kaggle-venv), and wrote the revised results + fix record. The headline did NOT change: Confirmation EV −0.5274, 95% day-block CI [−0.6606, −0.3732], 518 trades, effective n 370, 29 trade days. The one positive bound in the draft (R-TD +0.2097) is now MORE negative (−0.0261). The draft verdict in revised §8 is NO EDGE. The final verdict file (RE_RUN_VERDICT_2026-11-18.md) is NOT yet written — it is written only after R2.
+
+**Your job.** You are an independent hostile reviewer. You have NOT seen the R1 takes; judge the revised file on its own merits, using the fix record only as the claim of what was changed. Copy every number you check from the embedded text below — do NOT reconstruct figures from memory or paraphrase.
+
+**Verdict format (required, at the top of your reply):**
+- **Review verdict:** APPROVE / APPROVE WITH CHANGES / NOT READY
+- **Results ruling:** NO EDGE / INCONCLUSIVE (rule explicitly on revised §8 — see Q1)
+- **Linked submission:** KEEP v1 SKIP-ALL / CHANGE (v1 = skip-all notebook, public, linked, runs daily Dec 1–14; do NOT recommend a change unless you can name a concrete positive edge that survives the bar)
+
+**Questions (answer every one, with numbers):**
+- **Q1. NO EDGE vs INCONCLUSIVE.** Revised §8 rules NO EDGE: the merge §4 NO EDGE clause fires when "every bar leg [is] evaluated; the strongest candidate's upper CI bound ≤ 0 (or negative EV)"; the strict INCONCLUSIVE trigger is "effective n < 2,500 AND CI includes 0" — here effective n is 370 (< 2,500) but the CI [−0.6606, −0.3732] excludes zero on the negative side. Do you agree with NO EDGE, or does the sub-2,500 effective n force INCONCLUSIVE regardless of CI direction? State your ruling and the exact merge wording it rests on. If you rule INCONCLUSIVE, say plainly that the submission recommendation is identical either way (no change to v1 skip-all) and the reason is power, not a positive signal.
+- **Q2. R-TD fix.** The fee bug is claimed fixed: stopped-miss payoff is now −s − 0.30, best EV_opt is −0.0261 (was +0.2097), max over all 42 cells is −0.0261, corrected f* best cell −0.0959 (was −1.69), zero ceiling violations (max rescue jumps 0.9500/0.9000/0.8000/0.7000/0.5000/0.2000 at s = 0.05/0.10/0.20/0.30/0.50/0.80), and the corrected −0.0261 does not exceed the attainable maximum +0.0436. Verify the arithmetic you can from the embedded text (the −0.2358 correction = −0.30 × 0.786; the bound check). Is the R-TD bound now trustworthy as a negative bound? Any remaining fee-accounting hole?
+- **Q3. Join coverage.** The 106-row contradiction is claimed resolved: the missing rows are all Aug 23–31; creation 99.57% archive / 100% Oct; overall 88.15% / 87.93%. Does the fix record's accounting close the contradiction, or is a hole left?
+- **Q4. Primary concentration.** New: top-1 4.8%, top-5 21.9%, top-10 32.9% of positive payoffs; leave-best-day-out EV −0.5396; leave-worst-day-out EV −0.4436. Is the NO EDGE ruling's concentration leg now complete? Does the broad-based negative hold?
+- **Q5. p-values / Holm.** Claimed: two-sided p ≤ 0.0002 (Phipson–Smyth 2/(B+1), B=10,000), one-sided p = 1.0000 for H1: EV > 0, Holm [≤0.0004, 0.3276]. Is the inferential procedure now valid as stated? Any remaining misstatement?
+- **Q6. R7 weeks.** The 11 missing buckets are claimed re-derived as ISO weeks W34–W44, all negative, best tp=3 every week. Is the R7 reproduction claim now honest?
+- **Q7. E1h/E2h anomaly + Oct 30.** Claimed explained (token SD 1.7229 vs 1.4185 × DE cancel) and Oct 30 verified genuine selectivity (EV_hat max −0.0439). Does the explanation hold on the numbers given?
+- **Q8. Permutation expansion.** Now full 497-combo family, within-day, B=200, min-n 100: observed −0.4045, PS p = 0.0100 (weak ranking signal, no profitable subgroup); original 20-rep PS p = 0.4762. Is the permutation control now adequate, and is the "weak ranking signal, no edge" reading correct?
+- **Q9. Q2 collapse diagnostic.** Collapse −0.4620, CI [−0.7745, −0.1479], z=−2.89; high-EV bins +0.465/+1.229 (Discovery) → −0.489/+0.080 (Confirmation). Is the "calibration worthless" overclaim fixed, and does the diagnostic support the NO EDGE reading?
+- **Q10. Chronology.** Claimed: merge 16:00:08 UTC (21:30:08 IST); panel 15:36–15:55; compute 16:00–16:58; no frozen choice changed after the freeze. Does this reconcile the freeze/run chronology?
+- **Q11. Leg 7 downgrade.** Implementability downgraded PASS → UNVERIFIED (never packaged/executed as a notebook). Is the downgrade correct, and does it change the verdict?
+- **Q12. Independent arithmetic audit.** Recompute from the embedded numbers every check you can: pooled tp=3 EV, Discovery/Confirmation totals, half totals (E2h −273.1960 vs −273.17 — are unrounded half totals now supplied?), fee sensitivities, R-LAD total, H3 rows, November split, tau rows. List each check PASS/FAIL with your recomputation. Flag any number you cannot verify from the text as UNVERIFIED rather than asserting it.
+- **Q13. Remaining defects.** Numbered defect register (any severity) for anything still wrong, overstated, or unverifiable in the revised file — including the two recorded limitations (October per-token probabilities not saved, so no October calibration table without a ~2h re-run; wf_results.json provenance still unverified, R-TE/R-LAD quarantined). Is either limitation a blocker for the verdict, or correctly recorded as a limitation?
+
+**Rules.** No web research. No submission, notebook, or account change. No new policy, threshold, or edge search — this is a review of the revised results as written. If you find a defect that would change the headline or the ruling, say so explicitly with the number; otherwise say the headline stands. Your reply must be self-contained: the parent saves it verbatim as the R2 take.
+
+---
+
+## PART A — REVISED RESULTS (verbatim, RE_RUN_RESULTS_REVISED_2026-11-18.md)
+
+# C109 Memecoins — Full Edge-Hunt Re-Run: RESULTS (REVISED after R1)
+
+**Date:** 2026-11-18 (panel phase 2026-11-18 15:36–15:55 UTC; compute 16:00–16:58 UTC; all dates UTC unless stated)
+**Frozen design:** `RE_RUN_MERGE_2026-11-18.md` (34,663 bytes, written 16:00:08 UTC = 21:30:08 IST — the draft's "~21:40 IST" was 10 minutes late; see Appendix A for the full mtime timeline).
+**Status:** ALL COMPUTE COMPLETE. R1 hostile review complete (Gemini, Notion, GPT — all APPROVE WITH CHANGES, all NO EDGE). **This file is the REVISED results after the R1 fix pass** (`RE_RUN_FIX_RECORD_2026-11-18.md`): every R1 defect is fixed or explicitly recorded, every number below is recomputed from the saved artifacts. The headline does not change; the audit trail is now exact. Awaiting R2 re-review before any verdict file is final.
+**Linked v1:** NOT touched. Skip-all notebook `rsaxena3011/c109-memecoins-pump-or-dump-skip-all-frozen` untouched throughout; freeze Nov 30, 2026 23:59 UTC.
+
+## 0. Ground rules (frozen)
+
+- **True payoff formula:** tp is a MULTIPLE in [3,100]; 0 = skip. Hit iff max_x >= tp. Hit payoff = tp - 1 - 0.3. Miss payoff = final_x - 1 - 0.3. Skip = 0. The 0.3 is the hosts' flat round-trip cost, charged on EVERY trade. Label maturity H = 1h; bot training rule mt <= D - 2h. The old percent formula ("hit pays tp/100", "breakeven 96.6%") is STRUCK forever. True breakeven precision: tp=3 ~37.7% (pooled 37.60%), tp=5 ~20.7%.
+- **Splits (mt UTC date only):** Discovery Aug 21-Oct 1 = 24,838 rows; Confirmation Oct 2-31 = 16,213 rows (halves Oct 2-16 = 10,052, Oct 17-31 = 6,161); November Nov 1-16 = 5,980 rows. Total attached 47,031 (0 duplicates).
+- **Bar (merge §4):** net EV/trade > 0 after 0.3 with 95% day-block bootstrap CI lower bound > 0; BOTH halves positive; >= 2,500 effective trades (DE floored >= 1); paired incremental EV CI excludes 0; flat-0.40 point estimate > 0; Holm; implementable in-notebook; sensitivities (real-fee 0.025, +0.015/+0.05/+0.10, E in {1h,2h}, concentration); November must not contradict October.
+- **Reporting floor (merge ruling (a)):** >= 500 raw / >= 300 eff / >= 20 confirmation days for any positive signal to be called underpowered-but-positive. Below the floor, a positive point estimate is lottery noise, not a signal. **Clarification (R1 fix):** the Confirmation window has 30 eligible days; the primary policy actually traded on **29** of them (E2h) / **28** (E1h). The floor is met under either reading (30 eligible days >= 20; 29 trade days >= 20).
+- **Compute:** LOCAL kaggle-venv python only; no new Kaggle kernel; no parquet download. Scripts in `stageB/`.
+
+## 1. Step 0/1 — Reproduction: PASS (all checks)
+
+`stageB/rerun_verify_fast.py` + `rerun_verify_fast.json`; `stageB/r7_reprice.py` re-run from raw inputs; `stageB/rerun_topdecile.py`.
+
+- Pooled attached tp=3 EV = **-0.6623** (total -31,148.93, n=47,031). NOT -0.6750: the -0.6750 is the dev-subset value (data_dev -0.674985; attached-restricted-to-dev-mints -0.675040). All four panel takes + brief misattributed it to the attached set. Corrected here.
+- R7 reprice from raw inputs: 727 keys, **0 numeric diffs > 1e-9, max abs diff 0.0** vs preserved original `stageB/r7_reprice_ORIGINAL_2026-11-18.json`.
+- Curve P2 recomputed from `stageB/stage2_payoffs.pkl`: curve 377/-0.8495, extended 390/-0.7531, baseline 910/-0.6798 — exact.
+- Top decile recomputed (two tie-handling conventions, both reported — R1 fix): **qcut top bin n=1,622, EV -0.5249** (exact -0.5248506302648206), SE 0.0313, day-block CI [-0.6109, -0.4409], DE 2.00 (1.9983), effective n 812 (811.67); **strict rank top-10% n=1,621, EV -0.5244** (exact -0.5244131583228497), day-block CI [-0.6107, -0.4398], DE 2.01 (2.0132), effective n 805 (805.17). The 0.0005 gap is ONE boundary token (payoff -1.2340, a miss) included by qcut's tie handling and excluded by strict rank — HGB probabilities are discrete at the boundary. Both are negative with CIs excluding zero; the gap is immaterial to any conclusion. The qcut bin is the R7 reproduction target. Tail slices (strict rank): top5 n=811 EV -0.6174; top2 n=324 EV -0.5425; top1 n=162 EV -0.5540. Stage 2 Oct tp=3 overall: n=16,213, EV -0.6846 (exact -0.684567, total -11,098.88).
+- Nov 3 replay: 6,954/6,954 traded, 0 skipped; total -5,557.09, -0.7991/token. Windows W1 -0.7419, W2 -0.8852, W3 -0.7716, W4 -0.7651 — all negative.
+- Feasibility table: top decile 1,622 raw -> 1,081 eff @DE1.5, 867 @DE1.87 — cannot meet 2,500 even at DE=1.0; broad 25% (4,053 raw) meets it @DE1.5.
+- Join coverage — **CORRECTED (R1 fix; the draft's "pfamm = creation = 100% for mt <= Oct 31" was wrong for creation):** pfamm = 100% for mt <= Oct 31 (41,051/41,051). Creation = **99.57% in the archive** (24,732/24,838 — exactly **106 rows missing, all dated Aug 23–31**: 9, 14, 18, 9, 19, 9, 7, 7, 14) and 100% Oct 2-31 (16,213/16,213); Nov 1 = 100% (409); Nov 2-16 = 0% (5,571 rows). Overall: pfamm 41,460/47,031 = **88.15%**; creation 41,354/47,031 = **87.93%**. The 106-row gap is a contiguous late-August window in the archive (the merge §0 E3 note — "~107 refreshed archive labels lack creation rows" — named the cause; the count is 106, not 107). Oct 29-30 have ZERO creation-missing rows (verified per-date; see §3b). `coverage_by_date*.csv` "feat" is Stage A featurable coverage, NOT join coverage.
+- **R7 "42 time buckets" — CLOSED (R1 fix; the draft's manifest gap is resolved by reproduction, not by narrowing):** the 11 un-re-derived buckets are the **ISO calendar weeks W34–W44** (11 weeks over Aug 21–Oct 31), re-derived from the attached labels (mt <= Oct 31) in `stageB/rerun_fix_r1.py`. Best tp = 3 in EVERY week; all negative at best tp: W34 n=1,693 EV -0.6291; W35 n=4,985 -0.6110; W36 n=3,651 -0.7001; W37 n=2,799 -0.7091; W38 n=4,266 -0.7431; W39 n=4,587 -0.6088; W40 n=5,178 -0.6959; W41 n=4,787 -0.7291; W42 n=3,821 -0.6535; W43 n=2,935 -0.6854; W44 n=2,349 -0.6228. (R7's original best week, W36 -0.0394, was under the old percent formula; under the true formula W36 is -0.7001 at tp=3.) 42 = hour 24 + dow 7 + week 11; all 42 negative at their best tp. The buckets were descriptive (T-C family), never used in selection, testing, or the bar.
+
+## 2. Discovery (merge §8 step 2) — FROZEN POLICY
+
+`stageB/rerun_discovery.py` -> `rerun_discovery_oos.csv` (63,196 rows = 15,799 eval mints x 4 tp), `rerun_discovery_summary.json`, `rerun_discovery_frozen.json`. 28 inner eval days Sep 4-Oct 1; burn-in Aug 21-Sep 3; expanding daily walk-forward; calibration slice = last 7 days before D-2h.
+
+**Calibrator winners (logloss-primary, Brier + tail-err tiebreaks):**
+
+| tp | none (logloss) | Platt | isotonic | WINNER | isotonic-eligible days |
+|----|----------------|-------|----------|--------|------------------------|
+| 3  | 0.3870 | 0.3633 | 0.3580 | **isotonic** | 28/28 |
+| 5  | 0.2031 | 0.1914 | 0.1900 | **isotonic** | 28/28 |
+| 10 | 0.0758 | 0.0699 | 0.0823 | **Platt** | 20/28 |
+| 20 | 0.0269 | 0.0229 | — | **Platt** | 0/28 |
+
+(tp=20 isotonic never eligible: <30 positives in every 7-day slice — as the panel predicted. **tp=10 denominator check (R1 fix, `stageB/rerun_fix_r1_calibrator_tp10.py`):** the original comparison ran Platt over 28 days vs isotonic over 20 days. Recomputed from scratch with the exact discovery loop: Platt 28-day mean 0.069850 (diff +0.000000 vs the summary) and isotonic 20-day mean 0.082315 (diff +0.000000) — the original numbers reproduce bit-identically. On the **shared 20 isotonic-eligible days**, Platt 0.076471 vs isotonic 0.082315 — **Platt still wins by 0.005844**. The frozen choice (Platt for tp=10) stands on the corrected denominator.)
+
+**Tau sweep (inner OOS, day-block LCB, B=2,000):**
+
+| tau | trades | days | EV/trade | LCB | total |
+|-----|--------|------|----------|-----|-------|
+| 0.00 | 289 | 28 | -0.0654 | -0.3347 | -18.89 |
+| 0.02 | 244 | 28 | -0.0885 | -0.3911 | -21.60 |
+| 0.05 | 202 | 28 | -0.1728 | -0.4652 | -34.90 |
+| 0.10 | 134 | 26 | -0.0842 | -0.4101 | -11.28 |
+| 0.15 | 92 | 23 | +0.1224 | -0.2976 | +11.26 |
+| 0.20 | 63 | 19 | +0.1543 | -0.3934 | +9.72 |
+| 0.30 | 38 | 13 | +0.5457 | -0.3216 | +20.74 |
+| 0.50 | 13 | 6 | -0.1859 | -0.8468 | -2.42 |
+
+Eligible (>=200 trades, >=20 days): tau in {0.00, 0.02, 0.05}. **TAU* = 0.00** (max LCB among eligible, -0.3347). The frozen policy is the LEAST-NEGATIVE eligible policy, and it is negative in Discovery (EV -0.0654, 289 trades, 1.8% of inner eval tokens).
+
+The tau=0.15/0.20/0.30 positive point EVs are lottery artifacts — verified by recomposition: tau=0.30 is 38 trades with total +20.74, of which ONE tp=20 trade pays +18.70 (max_x 30.89, Sep 9) — 90% of the total from a single winner; only 3 of 38 trades hit. **Correction (R1 fix):** the draft said all three have LCBs <= -0.30. The exact LCBs are **-0.2976 / -0.3934 / -0.3216** — tau=0.15's LCB is -0.2976, i.e. 0.0024 ABOVE -0.30. Only tau=0.20 and tau=0.30 are <= -0.30. The conclusion is unchanged (all three fail the reporting floor: 92/63/38 trades, 23/19/13 days; they are NOT signals, they are the winner's-curse pattern the merge predicted), but the -0.30 claim as stated was wrong by 0.0024 and is corrected here.
+
+**Frozen policy (for Confirmation):** two-head HGB (p-hat(tp) + E[final_x | max_x < tp], shrinkage prior 100), tp grid {3,5,10,20}, calibrators {3: isotonic, 5: isotonic, 10: Platt, 20: Platt}, tau* = 0.00, trade iff max_tp EV_hat >= 0.00, tp = argmax EV_hat. Procedure frozen, weights re-fit daily.
+
+## 3. Confirmation (merge §8 step 3) — DECISIVE, single pass
+
+`stageB/rerun_confirmation.py` -> `rerun_confirmation.json`, `rerun_confirmation_oos_E2h_primary.csv`, `rerun_confirmation_oos_E1h_sensitivity.csv`. Daily expanding walk-forward retraining at mt <= D-2h (primary) / D-1h (sensitivity); calibrator re-fit on the 7-day slice each day; day-block bootstrap B=10,000.
+
+### 3a. Primary (E=2h)
+
+| metric | value |
+|---|---|
+| Eligible tokens / days | 16,213 / 30 (29 trade days) |
+| Trades / trade share | **518 / 3.19%** |
+| EV per trade | **-0.5274** (exact -0.527362292214179) |
+| Total payoff | -273.1736673669447 |
+| 95% day-block CI | **[-0.6606, -0.3732]** (exact [-0.6605617282693431, -0.37322304290804037]) — excludes 0, entirely negative |
+| Bootstrap p (two-sided) | **<= 0.0002** (Phipson–Smyth 2/(B+1), B=10,000; 0/10,000 bootstrap means >= 0). One-sided p for H1: EV > 0 is **1.0000**. See §3c for the exact procedure. |
+| Design effect / effective n | 1.40 (1.3985) / **370** (370.40) |
+| Halves | Oct 2-16: -0.4466 (n=266, total -118.785310); Oct 17-31: -0.6127 (n=252, total -154.388357) — both negative; unrounded half totals sum to -273.173667 = total exactly |
+| Paired vs fixed tp=3 (same mints) | +0.0371, CI [-0.0295, +0.1228], p=0.3276 — NOT significant |
+| Policy-level EV per eligible token | -0.0168 (vs skip-all 0.0 — the policy LOSES vs skipping) |
+| Flat-0.40 stress | -0.6274 |
+| Real-fee (0.025) EV | -0.2524 — still negative under the assumed 0.025 fee (not a causal claim: the loss is not a fee artifact at either fee level) |
+| Sensitivities | +0.015: -0.5424; +0.05: -0.5774; +0.10: -0.6274 |
+| Reporting floor (500/300/20) | **MET** (518 raw / 370 eff / 30 eligible days; 29 actual trade days) |
+| 2,500 effective bar | NOT met (370) |
+| **Concentration (primary policy, R1 fix — required for the NO EDGE ruling)** | 108 of 518 trades positive; positive-payoff total +181.75; largest single payoff +8.74. **Top-1 share of positive payoffs 4.8%; top-5 21.9%; top-10 32.9%.** Leave-best-day-out EV **-0.5396**; leave-worst-day-out EV **-0.4436**. The negative EV is broad-based: removing the best day makes it slightly MORE negative, and removing the worst day still leaves it at -0.44. No concentration story — and no positive to concentrate. |
+
+### 3b. Sensitivity (E=1h — shorter embargo)
+
+| metric | value |
+|---|---|
+| Trades / trade share | **575 / 3.55%** |
+| EV per trade | **-0.5417** (exact -0.5417387425309221) |
+| Total payoff | -311.49977695528025 |
+| 95% day-block CI | **[-0.6770, -0.3918]** (exact [-0.6769720962485275, -0.3917972566645463]) — excludes 0, entirely negative |
+| Design effect / effective n | 1.00 (unfloored 0.9970) / 575 (floored) |
+| Halves | Oct 2-16: -0.4924 (n=309, total -152.144616); Oct 17-31: -0.5991 (n=266, total -159.355161) — both negative |
+| Paired vs fixed tp=3 | +0.0495, CI [-0.0392, +0.1589], p=0.3128 — NOT significant |
+| Flat-0.40 stress | -0.6417 |
+| Real-fee (0.025) EV | -0.2667 — still negative under the assumed 0.025 fee |
+
+The shorter embargo does NOT rescue anything (E1h EV -0.5417 vs E2h -0.5274).
+
+**E1h/E2h CI-width anomaly — EXPLAINED (R1 fix, `stageB/rerun_fix_r1.py`):** E1h has MORE trades (575 vs 518) and a LOWER design effect (0.9970 vs 1.3985) yet nearly the same CI width (0.2852 vs 0.2873). This is not a DE quirk and not a bug — it is token-level variance. E1h's token-level payoff SD is 1.7229 vs E2h's 1.4185 (47% larger variance), because E1h trades tp=20 on 66.1% of its trades (380/575) vs E2h's 56.8% (294/518); tp=20 payoffs are the most dispersed in the grid (hit +18.7, miss ≈ -1.3). Token-level SE: E1h 0.0719 vs E2h 0.0623. Day-block bootstrap SDs are nearly identical (E1h 0.0717, E2h 0.0737) because E1h's larger token variance times DE ≈ 1.00 equals E2h's smaller token variance times DE = 1.40. The two effects cancel; the CI widths match. No DE correction is owed. tp selection counts — E2h {3: 96, 5: 50, 10: 78, 20: 294}; E1h {3: 41, 5: 79, 10: 75, 20: 380}.
+
+**Oct 29–30 zero-trade days — VERIFIED genuine selectivity (R1 fix):** E2h Oct 29: 357 eligible, 3 trades, EV_hat max +1.2494, p99 -0.0268, median -0.6669, 3 tokens with EV_hat >= 0, 0 nonfinite EV_hat, creation-missing rate 0.0000. E2h Oct 30: 369 eligible, **0 trades, EV_hat max -0.0439 (every token negative)**, p99 -0.0527, median -0.5785, 0 tokens with EV_hat >= 0, 0 nonfinite, creation-missing 0.0000. E1h Oct 29: 0 trades (max -0.0242); Oct 30: 0 trades (max -0.0693). Predictions exist on both days, are finite, and joins are complete — the zero-trade days are the policy finding nothing worth trading, not a pipeline failure. (E2h also traded only 8/4/4 on Oct 27/28/31; E1h 4/3/3 — the policy is extremely selective late in the month, consistently across both embargoes.)
+
+### 3c. Holm (merge §5) — CORRECTED (R1 fix)
+
+Two tests: locked-policy test + paired test. **Procedure (now specified, as R1 required):** null H0: EV/trade = 0 (two-sided) / EV/trade <= 0 (one-sided, H1: EV > 0); test statistic = mean EV/trade over the Confirmation trades; resampling = whole-UTC-day bootstrap with replacement, B=10,000, seed=0 (the `dayblock_ci` procedure in `stageB/rerun_confirmation.py`: p_two_sided = 2 × min(mean(means <= 0), mean(means >= 0)), capped at 1.0). **The draft's literal p = 0.0 / < 0.0001 was wrong as stated** — a bootstrap with B=10,000 cannot return an exact zero; 0/10,000 bootstrap means >= 0 gives a finite-sample bound, not a point zero. Corrected: locked-policy test **two-sided p <= 0.0002** (Phipson–Smyth 2/(B+1) = 2/10,001 = 0.00019998); **one-sided p = 1.0000 for H1: EV > 0** (every bootstrap mean is negative — the data point the wrong way for a positive edge). Paired test p = 0.3276 (a genuine proportion, stands). Holm over the two corrected raw p-values [<=0.0002, 0.3276]: **adjusted [<=0.0004, 0.3276]**. The locked-policy test is significant (negative direction); the paired test is not. No other confirmatory test was run.
+
+### 3d. Discovery -> Confirmation collapse — measured, not asserted (R1 fix)
+
+Discovery inner EV -0.0654 (289 trades) vs Confirmation EV -0.5274 (518 trades). **The draft's "the calibration learned in September is worthless in October" is replaced by the observed difference and the locked-policy cross-period calibration-and-selection-drift diagnostic** (diagnostic only — no re-selection, no new policy; `stageB/rerun_fix_r1.py`, from the saved OOS predictions):
+
+- The deterioration is **-0.4620, day-block CI [-0.7745, -0.1479], SE 0.1599, z = -2.89** (independent day-block bootstraps of the two periods, B=10,000 each). The drop is statistically real — it is NOT sampling noise around a stable mean. Its CAUSE is unidentified.
+- Predicted-EV bins vs realized payoff, traded sets: in **Discovery**, the high predicted-EV bins REALIZED positively — [0.3,1.0): n=34, predicted +0.450, realized **+0.465**; [1.0,∞): n=4, predicted +1.396, realized **+1.229**. The model ranked correctly in September. In **Confirmation**, the same bins collapsed — [0.3,1.0): n=169, predicted +0.590, realized **-0.489** (hit rate 1.8%); [1.0,∞): n=20, predicted +1.232, realized **+0.080** (hit rate 10.0%). The lower bins: Discovery [0,0.1) n=155 predicted +0.045 realized -0.049; [0.1,0.3) n=96 predicted +0.172 realized -0.334. Confirmation [0,0.1) n=177 predicted +0.043 realized -0.552 (hit 4.0%); [0.1,0.3) n=152 predicted +0.191 realized -0.622 (hit 7.2%). The ranking signal that worked in Discovery inverted in October: the bins the model was most confident about lost the most.
+- Trade mix drifted: Discovery {3: 56, 5: 53, 10: 85, 20: 95} (tp=20 share 32.9%, trade rate 1.83%) vs Confirmation {3: 96, 5: 50, 10: 78, 20: 294} (tp=20 share 56.8%, trade rate 3.19%). The policy selected the highest tp far more often in October — and tp=20 is where the realized hit rate collapsed hardest.
+- Discovery hit-probability calibration (tp=3, predicted-p deciles vs realized hit rate): 0.003/0.014, 0.027/0.050, 0.083/0.120, 0.107/0.130, 0.133/0.166, 0.146/0.174, 0.157/0.142, 0.168/0.147, 0.186/0.162, 0.219/0.198 — reasonably calibrated in September (slight overconfidence at the top decile, 0.219 vs 0.198).
+- **Limitation, stated plainly:** the Confirmation OOS CSVs save EV_hat_best and tp_policy but NOT the per-token predicted hit probabilities, so an October calibration table cannot be built from the saved artifacts. The bin table above (EV_hat_best vs realized payoff) is the available substitute; a full October calibration table would require re-running Confirmation (~2h) and is not owed for the verdict — the policy loses in October under every measurement that exists.
+- The cleanest single fact stands, now quantified: the direct-EV approach fails out-of-sample in the decisive window, and it fails by a lot (CI upper bound -0.37), with the failure concentrated exactly where the model was most confident.
+
+## 4. The six new tests + R-H3
+
+`stageB/rerun_tests.py` -> `rerun_tests.json` (re-run once after the R-TD fix; see §11 — the diff confirms ONLY R-TD fields changed). All on the attached 47,031 unless stated otherwise.
+
+### R-TD (stop-loss bound, diagnostic, uncounted) — CORRECTED (R1 fix, the largest correction in this file)
+
+**The draft's table was wrong.** The stop-loss computation used `max(payoff_0, -s)` — the stopped-miss payoff was -s WITHOUT the 0.30 round-trip fee, which the hosts charge on EVERY trade including stopped-out ones. The correct stopped-miss payoff is `-s - 0.30`. The f* formula was also wrong in two places: it used EV(0) in the numerator (the winners-only model starts from the optimistic bound EV_opt, not the no-stop EV) and (tp - s) in the denominator (the per-dipped-winner loss is (tp-1-0.3) - (-s-0.3) = tp-1+s — the fee cancels). Corrected: **f* = EV_opt / [p_T · (tp - 1 + s)]**, where EV(f) = EV_opt - p_T·f·(tp-1+s) and f* is the dip fraction at which the optimistic bound breaks even. Fixed in `stageB/rerun_tests.py` (payoff + f* + note) and the full script re-run. Optimistic bound assuming (i) hits never dip to the stop first, (ii) misses are rescued at -s-0.3 if final_x is worse (first passage UNOBSERVED — labels carry only max_x/final_x). Full grid (7 tp × 6 s = 42 cells), EV(0) = no-stop EV:
+
+| tp | EV(0) | EV_opt s=0.05 | EV_opt s=0.10 | EV_opt s=0.20 | EV_opt s=0.30 | EV_opt s=0.50 | EV_opt s=0.80 |
+|----|-------|---------------|---------------|---------------|---------------|---------------|---------------|
+| 3  | -0.6623 | **-0.0261** | -0.0642 | -0.1396 | -0.2140 | -0.3590 | -0.5637 |
+| 5  | -0.7252 | -0.0432 | -0.0840 | -0.1649 | -0.2447 | -0.4001 | -0.6194 |
+| 10 | -0.7619 | -0.0645 | -0.1063 | -0.1890 | -0.2706 | -0.4296 | -0.6539 |
+| 20 | -0.7783 | -0.0778 | -0.1197 | -0.2029 | -0.2848 | -0.4445 | -0.6698 |
+| 30 | -0.7765 | -0.0756 | -0.1176 | -0.2008 | -0.2827 | -0.4425 | -0.6679 |
+| 50 | -0.7747 | -0.0736 | -0.1156 | -0.1988 | -0.2808 | -0.4406 | -0.6661 |
+| 100 | -0.7735 | -0.0723 | -0.1143 | -0.1975 | -0.2796 | -0.4394 | -0.6649 |
+
+Best: tp=3, s=0.05, EV_opt **-0.0261** (was +0.2097). **Maximum EV_opt over all 42 cells is -0.0261 — NO cell clears zero; even at f = 0 (no winner ever dips) no cell is positive.** The +0.2097 was entirely the fee omission: the correction is -0.2358 = -0.30 × 0.786 (78.6% of tokens are misses with final_x < 0.95, i.e. rescued at the floor). Miss-rescue gain at the best cell: +0.6362 (was +0.8720); EV_opt - EV(0) = +0.6362, and 100% of it is still the miss-rescue assumption. Corrected f*: best cell **-0.0959** (was -1.69 with the wrong formula); f* < 0 at all 42 cells (range -0.0959 to -39.17). **Bound check (GPT's D8):** the corrected best -0.0261 does not exceed the attainable maximum +0.0436 under the gross-stop + 0.30-fee interpretation — the old +0.2097 exceeded it by +0.1661, which is how the fee omission was caught. **Ceiling check (Gemini's D8):** the buggy version's per-token rescue jumps reached +0.9559/+0.9602/+0.9611 at s=0.05, strictly above the hard ceiling 1-s = 0.95. Corrected max rescue jumps are 0.9500/0.9000/0.8000/0.7000/0.5000/0.2000 at s = 0.05/0.10/0.20/0.30/0.50/0.80 — **zero ceiling violations across all 42 cells** (each jump = 1-s-final_x <= 1-s). The R-TD bound is now negative everywhere: it strengthens the NO EDGE case rather than weakening it. A bound that cannot clear zero even under deliberately optimistic ordering, with the fee restored, is not an edge. **Nothing actionable.**
+
+### R-TE (prediction buckets, exploratory) — RELABELLED (R1 fix)
+
+**Nov 3 `wf_results.json` replay (n=6,954, UNVERIFIED provenance — diagnostics only, optimistic upper bound).** This test is on the 6,954-row replay population (12 days: Sep 25–27, Oct 5–7, Oct 15–17, Oct 25–27), NOT the attached 47,031 — the draft's §4 header scope was wrong for this test and is corrected here. Per-window n: W1 1,967, W2 2,269, W3 1,498, W4 1,220. Deciles of predicted max_x (Stage A predictions, attached). Best: **decile 9 (top), tp=3, EV -0.2987** (n=696, hit 29.5%, mean predicted max_x 2.27). Decile-9 per-window n: W1 251, W2 231, W3 200, **W4 14** — the rotation's W4 leg rests on 14 tokens. Best bucket still negative; its hit rate 29.5% vs its own breakeven ~37-40% (per-bucket, never pooled). Window rotation of the best decile: W1 -0.2315, W2 -0.5515, W3 -0.3290, W4 -0.3554 — all negative. No bucket flips in any window.
+
+### R-LAD (ladder variants, exploratory) — QUARANTINED (R1 fix)
+
+**Nov 3 `wf_results.json` replay (n=6,954, UNVERIFIED provenance — diagnostics only, optimistic upper bound).** Gain_hat from recorded predictions, shrink {0.25,0.33,0.5,1.0}, threshold {1.2,1.5,2,2.5,3,5}. Best: **threshold 3.0, shrink 1.0: 15 trades, EV/trade +0.0522, total +0.78, EV/token +0.0001.** Threshold 5.0: ZERO trades. Threshold 1.2: all 6,954 traded, EV -0.6497 (the model predicted gain_hat >= 1.2 for every Nov 3 token). The 15-trade positive is below every floor (15 trades, 1 day) — lottery noise, not a candidate. No regeneration triggered: nothing here is a candidate policy, and the provenance caveat (merge ruling (e)) stands for any future use of these predictions.
+
+### R-OR (in-window oracle, diagnostic, uncounted)
+
+Best FIXED tp per window (hindsight ceiling — the best tp you could have picked knowing the window):
+
+| window | n | best tp | best EV |
+|--------|---|---------|---------|
+| W1 | 1,967 | 3 | -0.5731 |
+| W2 | 2,269 | 3 | -0.7316 |
+| W3 | 1,498 | 3 | -0.6541 |
+| W4 | 1,220 | 3 | -0.6155 |
+| conf half 1 (Oct 2-16) | 10,052 | 3 | -0.6965 |
+| conf half 2 (Oct 17-31) | 6,161 | 3 | -0.6650 |
+
+tp=3 is best in EVERY window (the own take's expectation, verified). **Narrowed (R1 fix):** the correct claim is that the fixed-tp-selection oracle loses in every window — this test covers fixed-tp choice only, not arbitrary per-token oracles. There is no fixed tp choice that wins in any window.
+
+### R-TF (time-split confirmation, exploratory)
+
+**VACUOUS-NEGATIVE: zero discovery-positive cells; no confirmation test spent** (merge §2(i)). **Mapping corrected (R1 fix):** "archive" = the Discovery window (train_archive.csv, Aug 21–Oct 1); "train" = Oct 2–Nov 16 (train.csv, Confirmation + November). Best archive cell: age 1-24h, tp=100, EV -0.3696 (n=1,255). Best train cell: age >24h, tp=5, EV -0.4803 (n=288). Nothing to confirm.
+
+### R-NOV (November extension, label-only)
+
+Pooled Nov 1-16: n=5,980, tp=3 EV **-0.5801** (hit 15.17%). Per-date EV (tp=3): Nov 1 -0.6545, Nov 2 -0.5862, Nov 3 -0.5325, Nov 4 -0.5298, Nov 5 -0.6258, Nov 6 -0.5692, Nov 7 -0.5741, Nov 8 -0.6782, Nov 9 -0.5436, Nov 10 -0.5512, Nov 11 -0.6441, Nov 12 -0.5065, Nov 13 -0.4869, Nov 14 -0.6677, Nov 15 -0.6812, Nov 16 -0.5503. **All 16 days negative.** Nov 1 feature diagnostic (small-sample only, n=409): top decile n=41, EV -0.9335, **0 tp=3 hits**. **Leg-9 narrowing (R1 fix):** the frozen policy was NOT evaluated on Nov 2-16 — with 0% join coverage there are no features, so no EV_hat exists and the frozen rule accepts no Nov 2-16 rows (the feature-based R-NOV correctly BANNED them, merge ruling (d)). The November evidence for leg 9 is therefore the label-only baseline (pooled -0.5801, all 16 days negative) — a same-direction check, not a same-policy test. November does not contradict October — it confirms it, within that limitation.
+
+### R-H3 (dynamic tp from Stage A features, quarantined exploratory appendix)
+
+Timestamp gate: **PASS** (200/200 spot-checked max_ts < mt; F15/F18/F19 use ts<mt ticks only at source-code level). Confirmation window, 8,296 featurable of 16,213 (51.2%; per-date coverage 39-58%):
+
+| k (top-bucket count) | trades | EV/trade | EV/token (full pop) | total |
+|----|--------|----------|---------------------|-------|
+| 1 | 8,296 | -0.6504 | -0.3328 | -5,395.92 |
+| 2 | 8,296 | -0.6504 | -0.3328 | -5,395.92 |
+| 3 | 8,296 | -0.6567 | -0.3360 | -5,447.76 |
+| 5 | 8,296 | -0.7123 | -0.3645 | -5,909.01 |
+| 8 | 8,296 | -0.7384 | -0.3778 | -6,125.62 |
+| 13 | 8,296 | -0.7425 | -0.3799 | -6,160.10 |
+
+Featurable-only tp=3 baseline: -0.6504 (k=1 collapses to it). Dynamic tp makes it WORSE as k grows. All negative; outside the primary verdict and Holm family by design.
+
+## 5. Negative controls (merge ruling (j)) — all mandatory, all run
+
+### 5a. Prediction shuffle (Discovery policy)
+
+Shuffle predicted max EV_hat across mints within days (20 reps, tau* = 0.0): real policy EV -0.0654 (289 trades) vs shuffled mean **-0.7528** (range -0.84 to -0.64, max -0.6424). **Softened (R1 fix):** this is a ranking-signal diagnostic — real -0.0654 vs shuffled mean -0.7528 is consistent with the model ranking better than chance; it does not prove the absence of leakage, and it is not evidence of an edge. The model ranks (shuffled is 0.69 worse), it just does not rank ENOUGH to clear zero.
+
+### 5b. Label permutation (subgroup scan) — EXPANDED (R1 fix)
+
+**Expanded control (`stageB/rerun_fix_r1_permutation.py`, B=200):** full 71-cell subgroup family (bundle_size 5, bundled_buys_count 5, age 6, prior_n 5, prior_mean_final_x 5, dev_balance_decile 10, sol_amount_quintile 4, dow 7, hour 24 — 497 cell×tp combos, Aug–Oct population, 41,051 rows), **within-day permutation** of (max_x, final_x) outcome pairs (each day's outcome distribution preserved; the feature-outcome link broken within day), **min-n floor n>=100 applied identically to the observed and permuted scans**. Observed best cell: **-0.4045** (bundled_buys_count=0 @ tp=30, n=632) — unchanged at floors 100/300/500. Null maxima over 200 reps: mean **-0.5909**, min -0.6395, max **-0.3036**; **1/200 null maxima >= observed → Phipson–Smyth p = (1+1)/201 = 0.0100**. All 200 maxima published in `stageB/rerun_fix_r1_permutation.json`.
+
+**Original 20-rep control (retained, reconciled):** week-wise permutation, bundle_size + age family only (11 buckets × 7 tp = 77 combos), no min-n floor: observed best cell **-0.4465** vs permuted mean **-0.3243**, permuted max **+0.6439** (4 of 20 reps positive: +0.16, +0.41, +0.64, +0.57); 9/20 null maxima >= observed → Phipson–Smyth p = (9+1)/21 = **0.4762** — no evidence against the null IN THAT FAMILY.
+
+**Reconciliation of -0.4465 vs -0.4045:** different scan families. -0.4465 is the best cell of the 77-combo family (bundle_size + age, no floor); -0.4045 is the best cell of the full 497-combo v4 family (bundled_buys_count=0 @ tp=30, n=632). The two controls also differ in exchangeability (week-wise vs within-day) and in the min-n floor: the original's positive null maxima are tiny-cell lottery spikes (one permuted huge winner landing in a 6-token cell), which the n>=100 floor removes. **Labels are NOT permuted within the tested strata** (that would preserve the very association under test); permutation is within day only, features untouched.
+
+**Interpretation, narrowed (R1 fix):** the draft's "no subgroup signal" is too broad. The expanded control shows the best cell beats the within-day null at p=0.01 — weak evidence of ranking information in the features, consistent with the shuffle control (§5a). But the best cell still LOSES **-0.4045/trade**: there is **no PROFITABLE subgroup signal**. A selected maximum over 497 combos that loses 0.40/trade is not an edge, whatever its permutation p-value.
+
+### 5c. Live-feature availability audit
+
+- Stage A features (log_dev_balance, bundled_buys_count, bundle_size, log_age, sol_amount, log_gas_used, amount_of_instructions, log_mint_amount): source pumpfun_token_creation.csv + pfamm_migrations.csv (mint join); rows exist before migration completes; available at mt. NaN if no join row; never dropped; HGB native NaN.
+- Creator priors (prior_n, prior_mean_final_x, prior_mean_max_x): per-observation cutoff mt_j + 1h <= mt_i, verified by spot-check; creator-unknown -> prior_n NaN + creator_known=0 (v4 fix; the old prior_n=0 polluted bucket moved EV by -0.017: v2 prior_n=0 bucket n=39,075 EV -0.6709 vs v4 known first-timers n=33,398 EV -0.6877 vs unknown-creator bucket n=5,677 EV -0.5722).
+- hour/dow: from mt (UTC); never missing.
+- F15/F18/F19 (Stage A): pumpfun day-parquet swaps, ts < mt hard filter (source audit); last successful swap ts < mt; available at mt.
+- **wf_results.json provenance: STILL UNVERIFIED** (merge ruling (e)). Generating notebook code is gone (file now skip-all v2, no git repo). Documentary record says 24h-lagged creator history, which contradicts the non-embargoed-leakage suspicion but is not code proof. R-TE/R-LAD are diagnostics; any positive signal from them would have triggered mandatory regeneration with the frozen embargoed pipeline. No such signal exists (best R-TE -0.2987; best R-LAD 15 trades), so no regeneration is owed.
+- **Leg 7 implementability — DOWNGRADED (R1 fix):** the §5c audit is source-code inspection + the R-H3 200/200 timestamp spot-check + the creator-prior 12/12 spot-check. The frozen policy was never packaged or executed as a notebook, so leg 7 as literally stated ("implementable in-notebook") is **UNVERIFIED**, not PASS. This does not change the outcome — the verdict is NO EDGE either way — but the bar table (§7) now says so honestly.
+
+### 5d. Concentration analysis — CORRECTED (R1 fix)
+
+**Best subgroup cell (bundled_buys_count=0 @ tp=30, n=632):** total payoff -255.67. Top-1 winner share of positive payoffs 8.6%; top-5 42.9%; top-10 70.6%. Leave-best-day-out EV -0.4669; leave-worst-day-out EV -0.3411. **Sentence corrected:** the draft said "the cell is negative even without its best day". For a NEGATIVE cell, the robustness statement is that it remains negative without its WORST day (-0.3411) — removing the best day (-0.4669) makes a negative cell more negative, which proves nothing. The corrected reading: the cell is negative even without its worst day. No concentration story — and no positive to concentrate.
+
+**Primary policy (E2h, n=518) — NEW (R1 fix, see §3a):** top-1 4.8%, top-5 21.9%, top-10 32.9% of positive payoffs; leave-best-day-out -0.5396; leave-worst-day-out -0.4436. The primary policy's negative EV is broad-based, not concentrated in one bad day or one missing winner.
+
+## 6. Background families (the totality — every one negative)
+
+| family | n | EV | CI / note |
+|--------|---|-----|-----------|
+| Pooled buy-everything tp=3 (attached) | 47,031 | -0.6623 | tight; total -31,148.93 |
+| Best subgroup cell (v4, bundled_buys_count=0, tp=30) | 632 | -0.4045 | selected max, not unbiased; beats within-day null at p=0.01 but still loses |
+| Top decile qcut (tp=3) | 1,622 | -0.5249 | day-block CI [-0.6109, -0.4409], DE 2.00, eff 812 |
+| Top decile strict rank (tp=3) | 1,621 | -0.5244 | day-block CI [-0.6107, -0.4398], DE 2.01, eff 805 |
+| Top-decile tail slices (top10/5/2/1%) | 1,621 / 811 / 324 / 162 | -0.5244 / -0.6174 / -0.5425 / -0.5540 | NO monotonic tail improvement; tail-selectivity steelman fails |
+| Curve P2 (Stage 2) | 377 | -0.8495 | CI [-0.9550, -0.7299] |
+| Curve extended | 390 | -0.7531 | — |
+| Curve baseline | 910 | -0.6798 | — |
+| Stage 2 Oct tp=3 | 16,213 | -0.6846 | total -11,098.88 |
+| Nov 3 replay (recorded model) | 6,954 | -0.7991/token | 0 skipped; all 4 windows negative |
+| November label-only tp=3 | 5,980 | -0.5801 | hit 15.17%; Nov 1 alone -0.6545 |
+| R-EV frozen policy, Discovery | 289 | -0.0654 | inner OOS |
+| R-EV frozen policy, Confirmation E2h | 518 | -0.5274 | CI [-0.6606, -0.3732] |
+| R-EV frozen policy, Confirmation E1h | 575 | -0.5417 | CI [-0.6770, -0.3918] |
+| R-TD stop-loss bound, corrected (best of 42 cells) | 47,031 | -0.0261 | tp=3, s=0.05; NO cell clears zero |
+
+There is no family, window, half, bucket, decile, tp, subgroup, or month in which any policy, oracle, or bound is positive. The only positive point estimates anywhere are sub-floor lottery blips (Discovery tau-sweep at 92/63/38 trades; R-LAD at 15 trades). The R-TD bound, which was positive in the draft, is negative everywhere after the fee correction.
+
+## 7. Bar evaluation (merge §4, leg by leg)
+
+| leg | requirement | result | PASS/FAIL |
+|-----|-------------|--------|-----------|
+| 1 | EV/trade > 0, CI lower bound > 0 | EV -0.5274, CI [-0.6606, -0.3732] | **FAIL** |
+| 2 | Both halves positive | -0.4466 / -0.6127 (totals -118.785310 / -154.388357) | **FAIL** |
+| 3 | >= 2,500 effective trades | 370 (518 raw) | **FAIL** |
+| 4 | Paired incremental EV CI excludes 0 | +0.0371, CI [-0.0295, +0.1228], p=0.3276 | **FAIL** |
+| 5 | Flat-0.40 point estimate > 0 | -0.6274 | **FAIL** |
+| 6 | Holm | policy test two-sided p <= 0.0002 (Phipson–Smyth), one-sided p = 1.0000 for EV > 0; Holm-adjusted <= 0.0004; paired p=0.33 | FAILS on direction |
+| 7 | Implementable in-notebook | **UNVERIFIED** (downgraded from PASS — never packaged/executed as a notebook; source-inspection + spot-checks only) | UNVERIFIED (moot) |
+| 8 | Sensitivities | real-fee -0.2524 (under assumed 0.025 fee); +0.015/-0.5424; +0.05/-0.5774; +0.10/-0.6274; E1h -0.5417; primary concentration top-1 4.8%, leave-worst-day-out -0.4436 | all negative |
+| 9 | November must not contradict October | Label-only Nov 1-16 tp=3 -0.5801, all 16 days negative; frozen policy NOT evaluated on Nov 2-16 (no features) — same-direction check, not a same-policy test | consistent (no contradiction) |
+
+**Every substantive leg fails. Leg 7 is now UNVERIFIED rather than PASS, and leg 9 is narrowed to what was actually measured — neither change affects the outcome: an unverified-or-implementable policy that loses money is not an edge.**
+
+## 8. DRAFT VERDICT SECTION (for R2 to rule on — NOT final)
+
+**Draft verdict: NO EDGE.**
+
+**The ruling, with Defect 4 completed.** The merge §4 NO EDGE clause fires when "every bar leg [is] evaluated; the strongest candidate's upper CI bound <= 0 (or negative EV)". The strongest candidate — the frozen R-EV policy, Discovery-selected as the least-negative eligible policy — has Confirmation EV -0.5274 with 95% day-block CI upper bound **-0.3732 <= 0**. The strict INCONCLUSIVE trigger ("effective n < 2,500 AND CI includes 0") does NOT fire: effective n is 370 (< 2,500) but the CI excludes zero on the negative side. The p-value correction (Defect 4) strengthens this reading rather than weakening it: the locked-policy test is two-sided p <= 0.0002 (Phipson–Smyth 2/(B+1), B=10,000, 0/10,000 bootstrap means >= 0), one-sided p = 1.0000 for H1: EV > 0, Holm-adjusted <= 0.0004 — the negative result is not a borderline artifact; the data point decisively the wrong way for a positive edge. The paired test (p=0.3276, Holm-adjusted 0.3276) shows no improvement over fixed tp=3.
+
+**Full bar-leg table (revised):** leg 1 FAIL (EV -0.5274, CI [-0.6606, -0.3732]); leg 2 FAIL (halves -0.4466 / -0.6127); leg 3 FAIL (370 eff < 2,500); leg 4 FAIL (paired +0.0371, CI includes 0, p=0.3276); leg 5 FAIL (flat-0.40 -0.6274); leg 6 FAILS on direction (policy test significant negative; paired not significant); leg 7 UNVERIFIED (never packaged/executed as a notebook); leg 8 all negative (real-fee -0.2524 under the assumed 0.025 fee; E1h -0.5417; primary concentration top-1 4.8%, leave-worst-day-out -0.4436); leg 9 consistent (label-only November -0.5801, all 16 days negative; frozen policy not evaluated on Nov 2-16 — same-direction check, not a same-policy test).
+
+**Why not INCONCLUSIVE.** The INCONCLUSIVE reading would require treating any sub-2,500-n result as inconclusive regardless of CI direction. The merge's own text conditions INCONCLUSIVE on the CI including 0 ("effective n < 2,500 AND CI includes 0"), and the CI here excludes 0 entirely on the negative side ([-0.6606, -0.3732]). A result that is significantly negative with 518 trades, 370 effective, both halves negative, both embargo lengths negative, and November confirming October is a measured negative, not an unmeasured unknown. All three R1 legs ruled NO EDGE (Gemini; Notion provisionally; GPT). The fix pass changed no headline number and made the one positive bound in the draft MORE negative (R-TD +0.2097 → -0.0261). The one new statistical signal from the fix pass — the best subgroup cell beating the within-day permutation null at p=0.01 — is weak ranking information, not an edge: the cell loses -0.4045/trade.
+
+**The one question R2 must rule on explicitly:** does "effective n 370 < 2,500" + "CI excludes zero on the negative side" = NO EDGE (coordinator's reading, per the merge's parenthetical "or negative EV" and the conjunctive INCONCLUSIVE trigger) or INCONCLUSIVE (a stricter reading that treats any sub-2,500-n result as inconclusive regardless of CI direction)? If R2 rules INCONCLUSIVE, the verdict file says INCONCLUSIVE and the reason is power, not a positive signal — and the submission recommendation is identical either way (no change to v1 skip-all).
+
+**Submission consequence (either way): NO CHANGE to the linked v1 skip-all.** A verdict recommending a change would need bar met + both review rounds + boss's explicit go + re-upload + re-link before the Nov 30 freeze. The bar is not met.
+
+## 9. Struck-numbers retirement table (revised — for the verdict file)
+
+| number (struck) | correct number | where the wrong one lived |
+|-----------------|----------------|---------------------------|
+| Pooled tp=3 EV -0.6750 (attached) | **-0.6623** (attached, n=47,031); -0.6750 is the dev-subset value | all four panel takes + brief |
+| "Hit pays tp/100"; "breakeven 96.6%" | Hit pays tp-1-0.3; tp=3 breakeven ~37.7% (pooled 37.60%) | old percent formula (Amendment 1) |
+| "Well-powered null" (curve-swap probe) | Negative-EV null with tight CIs; max effective n 1,705 vs 2,500 minimum | probe verdict wording |
+| R7 "42 time buckets" (11 not re-derived) | **RESOLVED: 42 = hour 24 + dow 7 + ISO week 11 (W34–W44); all re-derived, all negative at best tp** | draft manifest gap, §1 |
+| wf_results.json "24h-lagged creator history" as code fact | UNVERIFIED (documentary record only; code gone) | merge ruling (e) |
+| R-TD EV_opt +0.2097 (tp=3, s=0.05); f* = EV(0)/[p_T·(tp-s)] | **EV_opt -0.0261; f* = EV_opt/[p_T·(tp-1+s)] = -0.0959; max over 42 cells -0.0261** — the +0.2097 was a 0.30 fee omission on stopped-out misses | R-TD reporting (fixed in this revision) |
+| Top-decile -0.5249 vs -0.5244 (0.0005 gap) | **qcut n=1,622 EV -0.5249 vs strict rank n=1,621 EV -0.5244** — one boundary token (payoff -1.2340); tie-handling only | draft §1 vs §5d |
+| Bootstrap p = 0.0 / < 0.0001; Holm [0.0, 0.3276] | **Two-sided p <= 0.0002 (Phipson–Smyth); one-sided p = 1.0000 for EV > 0; Holm-adjusted [<=0.0004, 0.3276]** | draft §3a/§3c |
+| "Calibration … is worthless" (September→October) | **Observed difference -0.4620, CI [-0.7745, -0.1479], z=-2.89**; high-EV bins realized +0.465/+1.229 in Discovery vs -0.489/+0.080 in Confirmation — ranking collapsed, cause unidentified | draft §3d |
+| "No subgroup signal" | **No PROFITABLE subgroup signal** — best cell beats the within-day null at p=0.01 but loses -0.4045/trade | draft §5b |
+| Leg 7 implementability PASS | **UNVERIFIED** — frozen policy never packaged/executed as a notebook | draft §5c/§7 |
+| "Merge written ~21:40 IST; build ~15:30–17:00 UTC" | **Merge 16:00:08 UTC (21:30:08 IST); panel 15:36–15:55 UTC; compute 16:00–16:58 UTC** | draft header |
+| §5d "cell is negative even without its best day" | **Inverted: robustness for a negative cell is remaining negative without its WORST day (-0.3411)** | draft §5d |
+| Reporting floor "518/370/30" | **518 raw / 370 eff / 30 eligible days; 29 actual trade days (E2h), 28 (E1h)** — floor met under either reading | draft §3a |
+| "tau=0.15 LCB <= -0.30" | **tau=0.15 LCB -0.2976** (0.0024 above -0.30); LCBs -0.2976/-0.3934/-0.3216 | draft §2 |
+| Join coverage "pfamm = creation = 100% for mt <= Oct 31" | **pfamm 100%; creation 99.57% in the archive (106 rows, Aug 23–31), 100% Oct 2-31** | draft §1 |
+| Calibrator tp=10 "0.0823 vs 0.0699" (mismatched days) | **Shared 20 days: Platt 0.076471 vs isotonic 0.082315 — Platt still wins; frozen choice stands** | draft §2 |
+| "Even the oracle loses" | **The fixed-tp-selection oracle loses in every window** (fixed-tp choice only) | draft §4 R-OR |
+| "Real-fee -0.2524: the loss is NOT a fee artifact" | **Still negative under the assumed 0.025 fee** (not a causal claim) | draft §3a/§3b |
+| "The pipeline's ranking signal is real, not a leak" | **Ranking-signal diagnostic: consistent with ranking better than chance; does not prove no leak** | draft §5a |
+
+## 10. Questions for R2 (the draft's §10, answered by the fix pass where answered)
+
+Answered by the fix pass (verify the answers, do not re-derive from scratch):
+1. **NO EDGE vs INCONCLUSIVE (§8):** coordinator's ruling is NO EDGE (see §8). R2 rules explicitly.
+2. **Discovery → Confirmation collapse:** measured, not noise — difference -0.4620, CI [-0.7745, -0.1479], z=-2.89; the high-EV bins that realized positively in Discovery (+0.465/+1.229) realized -0.489/+0.080 in Confirmation. Cause unidentified; no re-selection is proposed. Is there a regime/calibration story that justifies ONE more test, or is the diagnostic sufficient?
+3. **Tau-sweep blips:** still below the floor (92/63/38 trades, 23/19/13 days); tau=0.15's LCB is -0.2976, not <= -0.30. No follow-up proposed.
+4. **Permutation control:** expanded to the full 71-cell family, within-day, B=200, min-n floor 100 on both scans. Best cell beats the null at p=0.01 but loses -0.4045/trade. Is the "no PROFITABLE subgroup signal" narrowing correct?
+5. **R-TD decomposition:** fee fixed (best -0.0261), f* formula fixed (best -0.0959), ceiling verified (zero violations), GPT bound check passes (-0.0261 <= +0.0436). Is there ANY stop-loss formulation the labels CAN support, or is first-passage fundamentally unobservable here?
+6. **R7 "42 time buckets":** CLOSED — the 11 are ISO weeks W34–W44, all re-derived, all negative at best tp.
+7. **wf_results.json provenance:** treatment unchanged (diagnostics only, no regeneration owed — both R-TE and R-LAD negative). Is that correct, or does unverified provenance taint even the diagnostics?
+8. **Holm family:** corrected to [<=0.0004, 0.3276]. Is Holm over 2 (policy + paired) the right family?
+9. **E1h zero-trade days (Oct 29-30):** VERIFIED genuine selectivity (EV_hat max -0.0439 on Oct 30 E2h; finite predictions; joins complete). E1h/E2h CI-width anomaly explained (token variance × DE cancel).
+10. **Any arithmetic error anywhere in §§2-6:** re-add the totals. The numbers that matter most: Confirmation EV -0.5274 / CI [-0.6606, -0.3732] / 518 trades / eff 370 / 29 trade days; E1h -0.5417 / [-0.6770, -0.3918] / 575 trades / 28 trade days; Discovery tau* 0.00 / -0.0654 / 289 trades.
+
+Remaining open for R2 (new from the fix pass):
+11. **Leg 7 downgrade (PASS → UNVERIFIED):** is the downgrade correct, and does it change anything about the verdict? (Coordinator: no — NO EDGE either way.)
+12. **Permutation p=0.01:** the expanded control finds weak ranking information in the best cell. Does that warrant any follow-up test, or is "loses -0.4045/trade" dispositive?
+13. **Q2 cause:** the collapse is real (z=-2.89) but its cause is unidentified and October per-token probabilities were not saved. Is the diagnostic sufficient for the verdict, or is a Confirmation re-run with saved probabilities owed?
+
+## 11. File inventory + compute record
+
+- `RE_RUN_MERGE_2026-11-18.md` — frozen design (34,663 bytes).
+- `RE_RUN_MANIFEST_2026-11-18.md` — manifest + the 42-bucket gap (now closed; see §1).
+- `stageB/rerun_verify_fast.py/.json` — Step 0/1 reproduction (PASS).
+- `stageB/r7_reprice.py` + `r7_reprice_ORIGINAL_2026-11-18.json` — 0 diffs.
+- `stageB/rerun_topdecile.py/.json` — top decile recomputed (qcut + strict rank).
+- `stageB/build_joined_v4.py` — joined_v4.pkl (47,031 x 82; creator_known fix).
+- `stageB/rerun_subgroups_v4.py/.json` — 71 cells, best -0.4045.
+- `stageB/rerun_discovery.py` — `rerun_discovery_oos.csv` (63,196 rows), `rerun_discovery_summary.json`, `rerun_discovery_frozen.json`, `rerun_discovery_LOG.txt`. Runtime ~11 min.
+- `stageB/rerun_tests.py` — `rerun_tests.json`, `rerun_tests_LOG.txt`. Runtime ~2 min. **Re-run once after the R-TD fix (2026-11-18, fix pass): the diff against the pre-fix JSON confirms ONLY R-TD fields changed (42 rows + note); all other top-level keys byte-identical; all other sections reproduce exactly (R-TE -0.2987, R-LAD +0.0522, R-OR, R-NOV, R-H3, controls).**
+- `stageB/rerun_confirmation.py` — `rerun_confirmation.json`, `rerun_confirmation_oos_E2h_primary.csv` (16,213 rows), `rerun_confirmation_oos_E1h_sensitivity.csv` (16,213 rows), `rerun_confirmation_LOG.txt`, `rerun_confirmation_LOG2.txt`. **Compute record:** first run killed by a runtime restart at Oct 21 (primary pass, no outputs — script was not yet resumable); re-run with per-day incremental writes + resume logic killed by SIGTERM at E1h Oct 24; resume run completed cleanly (E2h re-aggregated bit-identically from disk: 518 trades, EV -0.5274, CI [-0.6606, -0.3732]). Total wall time ~2h including the two kills.
+- `RE_RUN_RESULTS_2026-11-18.md` — the draft under review (superseded by this file).
+- `RE_RUN_REVIEW_BRIEF_2026-11-18.md` — review brief for R1+R2 (draft results embedded verbatim).
+- **NEW (R1 fix pass):** `stageB/rerun_fix_r1.py` + `stageB/rerun_fix_r1.json` (join per-date, primary concentration, E1h/E2h anomaly, Oct 27-31, Q2 diagnostic, week buckets, R-TE windows); `stageB/rerun_fix_r1_permutation.py` + `stageB/rerun_fix_r1_permutation.json` (full-family permutation, B=200, all 200 maxima); `stageB/rerun_fix_r1_calibrator_tp10.py` + `stageB/rerun_fix_r1_calibrator_tp10.json` (tp=10 shared-day recompute, per-day logloss); `RE_RUN_FIX_RECORD_2026-11-18.md` (defect-by-defect fix record); `RE_RUN_FIX_TAKE_own_2026-11-18.md` (fix coordinator's own take, ≤250 words).
+- NOT YET WRITTEN: `RE_RUN_VERDICT_2026-11-18.md` (after R1+R2 — R2 re-reviews this revised file + the §8 draft verdict first).
+
+## 12. Fix-record table (R1 defects → fixes → recomputed values)
+
+| # | Defect (takes) | Fix | Before → After |
+|---|---|---|---|
+| 1 | R-TD fee bug: stopped-miss payoff -s, no 0.30 fee (all three, MAJOR) | `rerun_tests.py`: rescued = max(miss_pay, -s-0.30); full script re-run; diff confirms only R-TD changed | Best EV_opt **+0.2097 → -0.0261**; max over 42 cells -0.0261 (no cell clears zero); miss-rescue gain +0.8720 → +0.6362 |
+| 1b | R-TD f* formula wrong: EV(0) numerator, (tp-s) denominator | f* = EV_opt / [p_T·(tp-1+s)] | Best f* **-1.69 → -0.0959**; f* < 0 at all 42 cells (range -0.0959 to -39.17) |
+| 1c | R-TD rescue jumps exceed ceiling 1-s (Gemini) | Same re-run; per-cell max jump recorded | Max jumps 0.9559–0.9611 → **0.9500 max, zero ceiling violations**; GPT bound check passes (-0.0261 <= +0.0436) |
+| 2 | Join-coverage contradiction: ~106 rows unexplained (all three) | Per-date join counts from `joined_v4.pkl` | **106 rows, all Aug 23–31**; creation 99.57% archive / 100% Oct; pfamm 100% ≤ Oct 31; overall 88.15% / 87.93% |
+| 3 | Concentration on PRIMARY policy missing (all three) | Computed on E2h CSV (n=518) | **Top-1 4.8%, top-5 21.9%, top-10 32.9%; leave-best-day-out -0.5396; leave-worst-day-out -0.4436** |
+| 3b | §5d inverted sentence | Corrected | Robustness for a negative cell = remaining negative without its WORST day (-0.3411) |
+| 4 | Bootstrap p = 0.0 / < 0.0001 (all three) | Phipson–Smyth bounds; procedure specified; Holm recomputed | **Two-sided p <= 0.0002; one-sided p = 1.0000 for EV > 0; Holm [<=0.0004, 0.3276]** |
+| 5 | R-TE/R-LAD quarantine + scope (all three) | Relabelled as Nov 3 wf replay, unverified provenance, diagnostics only; per-window n published; §4 header scope fixed | R-TE decile-9 per-window **251/231/200/14**; windows W1–W4 n 1,967/2,269/1,498/1,220 |
+| 5b | -0.4465 vs -0.4045 reconciliation | Different families documented | -0.4465 = 77-combo family; -0.4045 = 497-combo family |
+| 6 | R7 11 buckets not re-derived (all three) | Identified as ISO weeks W34–W44; re-derived from attached labels | **All 11 reproduced; best tp=3 every week; all negative (-0.6088 to -0.7431)** — gap CLOSED |
+| 7 | E1h/E2h anomaly + Oct 29-30 (Gemini, GPT, Notion) | Token SE, unfloored DE, tp counts, Oct 27-31 diagnostics from both OOS CSVs | **Explained:** E1h token SD 1.7229 vs 1.4185 (tp=20 share 66% vs 57%); DE 0.9970 vs 1.3985; boot SDs 0.0717 vs 0.0737. **Oct 30 verified genuine selectivity** (EV_hat max -0.0439, 0 nonfinite, joins 100%) |
+| 8 | Permutation control (all three) | Full 71-cell family, within-day, B=200, min-n 100 on both scans; all maxima published | Observed -0.4045; null mean -0.5909, max -0.3036; **1/200 >= observed, PS p=0.0100**; original 20-rep: 9/20, PS p=0.4762 |
+| 9 | "Calibration is worthless" overclaim (Notion, GPT, Gemini) | Locked-policy cross-period diagnostic from saved OOS predictions | **Difference -0.4620, CI [-0.7745, -0.1479], z=-2.89**; high-EV bins +0.465/+1.229 (Disc) → -0.489/+0.080 (Conf); cause unidentified; no re-selection |
+| 10 | Freeze/run chronology (GPT, MAJOR) | Explicit mtime timeline (Appendix A) | **Merge 16:00:08 UTC (21:30:08 IST); panel 15:36–15:55; compute 16:00–16:58**; no frozen choice changed after the freeze |
+| 11 | Minor/documentary (across takes) | tau=0.15 LCB corrected to -0.2976; floor days 30 eligible / 29 trade; top-decile tie resolved (qcut vs strict rank); "even the oracle loses" narrowed to fixed-tp; R-TF archive/train mapped; tp=10 shared-day recompute (Platt still wins); fee/shuffle wording softened; Nov leg 9 narrowed (frozen policy not evaluated Nov 2-16); leg 7 downgraded to UNVERIFIED; unrounded half totals supplied | All corrected in §§1–7 above |
+
+## Appendix A. Freeze / run chronology (Defect 10 — GPT D8)
+
+**The draft's header was wrong in two places:** it recorded the merge as "~21:40 IST" and the build as "~15:30–17:00 UTC". File mtimes (UTC, 2026-11-18, full precision):
+
+| artifact | mtime (UTC) |
+|---|---|
+| Own take (`RE_RUN_TAKE_own_2026-11-18.md`) | 15:36:47 |
+| Panel brief (`RE_RUN_PANEL_BRIEF_2026-11-18.md`) | 15:37:02 |
+| Notion take | 15:45:06 |
+| Gemini take | 15:49:23 |
+| GPT take | 15:54:37 |
+| **Merge (`RE_RUN_MERGE_2026-11-18.md`)** | **16:00:08 (= 21:30:08 IST)** |
+| `rerun_verify_fast.json` | 16:00:14 |
+| `r7_reprice.json` | 16:00:35 |
+| Manifest (`RE_RUN_MANIFEST_2026-11-18.md`) | 16:03:03 |
+| `rerun_discovery.py` | 16:03:17 |
+| `rerun_discovery_summary.json` | 16:14:06 |
+| `rerun_tests.py` | 16:17:06 |
+| `rerun_tests.json` | 16:18:57 |
+| `rerun_confirmation.py` | 16:27:52 |
+| `rerun_confirmation.json` | 16:56:01 |
+| Results file (`RE_RUN_RESULTS_2026-11-18.md`) | 16:58:07 |
+
+**Reconciliation:** the "15:30" figure conflated the panel phase (15:36–15:55 UTC) with the compute phase (16:00–16:58 UTC); the "~21:40 IST" merge time was 10 minutes late (actual 21:30:08 IST). **No frozen choice was changed after the freeze:** every script encoding a frozen choice (calibrators, tau*, tp grid) was written at or after 16:03 UTC, after the merge file at 16:00:08 UTC, and the results file (16:58:07) postdates all compute. The two files written within a minute of the merge (`rerun_verify_fast.json` 16:00:14, `r7_reprice.json` 16:00:35) are verification artifacts, not choice-encoding scripts; the frozen choices were decided in the panel phase (15:36–15:55) before any compute script existed. No compute output fed back into a frozen choice.
+
+
+---
+
+## PART B — FIX RECORD (verbatim, RE_RUN_FIX_RECORD_2026-11-18.md)
+
+# C109 Re-Run — R1 Fix Record
+
+**Date:** 2026-11-18 (fix pass, after R1)
+**Scope:** all defects in the three R1 takes — Gemini (9 defects, APPROVE WITH CHANGES, NO EDGE), Notion (18 defects, APPROVE WITH CHANGES, provisional NO EDGE), GPT (19 defects, APPROVE WITH CHANGES, NO EDGE). All three agree: NO EDGE, keep v1 skip-all.
+**Fix coordinator:** fresh subagent (the re-run build coordinator completed and cannot resume). Own take first: `RE_RUN_FIX_TAKE_own_2026-11-18.md` (2,691 bytes).
+**Rule applied throughout:** where a take's demand conflicted with the frozen merge, the merge governs and the conflict is recorded explicitly (see D9, D11-leg-7, D8-family).
+**Headline:** UNCHANGED. Confirmation EV -0.5274, CI [-0.6606, -0.3732], 518 trades, eff 370. The fix makes every number, claim, and audit trail exact; the largest correction (R-TD +0.2097 → -0.0261) makes the case MORE negative.
+
+## How to verify this record
+
+Every recomputed number below comes from a script re-run (kaggle-venv), not from a review take. Re-run commands are given per defect. Key artifacts:
+- `stageB/rerun_fix_r1.py` (md5 60eddf80be200fb58616d8b52b7a594a) → `stageB/rerun_fix_r1.json` (07c03574bc377a398226aa1fc53474fd)
+- `stageB/rerun_fix_r1_permutation.py` (7520c1b149808c4d297534cec905e2fe) → `stageB/rerun_fix_r1_permutation.json` (6bcab1a2024f50a64456a8bf5f300f1f)
+- `stageB/rerun_fix_r1_calibrator_tp10.py` (a3f3392b509ada9ce4d8a8d0c09bbc9e) → `stageB/rerun_fix_r1_calibrator_tp10.json` (d0d5ea2b8ae24336d4ccc46bd41ed83b)
+- `stageB/rerun_tests.py` (bdb3182f220b2ee53aaf6734ef418b88, R-TD fixed) → `stageB/rerun_tests.json` (a73e9770fe620001e4a04c511d1076fc)
+- Revised results: `RE_RUN_RESULTS_REVISED_2026-11-18.md` (54,044 bytes, md5 8ffa13341041d26ffdb11faae55065bc)
+
+---
+
+## D1. R-TD fee bug — ALL THREE takes, MAJOR
+
+- **Defect:** the stop-loss table computed `max(payoff_0, -s)` — stopped-miss payoff -s WITHOUT the 0.30 round-trip fee the hosts charge on every trade. The +0.2097 bound violated the hard ceiling 1-s = 0.95 (per-token jumps +0.9559/+0.9602/+0.9611 at s=0.05) and exceeded GPT's attainable maximum +0.0436 by +0.1661.
+- **Fix:** `stageB/rerun_tests.py` — `rescued = np.maximum(miss_pay, -s - 0.30)`; header comment and R_TD note updated; full script re-run (~14 s, deterministic seeds).
+- **Before → After:** best cell (tp=3, s=0.05) EV_opt **+0.20965915639077087 → -0.026112259408316907**; maximum EV_opt over all 42 cells **-0.0261 — no cell clears zero; even at f = 0 no cell is positive**. Miss-rescue gain +0.8719655290791676 → +0.6361941132800798 (correction -0.2358 = -0.30 × 0.786: 78.6% of tokens are misses with final_x < 0.95). Max rescue jumps now 0.9500/0.9000/0.8000/0.7000/0.5000/0.2000 at s = 0.05/0.10/0.20/0.30/0.50/0.80 — **zero ceiling violations**. GPT bound check passes: -0.0261 <= +0.0436.
+- **Verification:** `~/workspace/kaggle-venv/bin/python stageB/rerun_tests.py` → `R-TD best: tp=3 s=0.05 EV_opt=-0.0261 (no-stop EV -0.6623, miss-rescue gain +0.6362, f*=-0.096)`. Diff vs pre-fix backup `/tmp/rerun_tests_before_fix.json`: **ONLY the R_TD key changed** (42 rows + note); all other top-level keys byte-identical; R-TE/R-LAD/R-OR/R-NOV/R-H3/controls reproduce exactly.
+
+## D1b. R-TD f* formula — ALL THREE takes, MAJOR
+
+- **Defect:** f* used EV(0) in the numerator and (tp - s) in the denominator. Both wrong: the winners-only model starts from the optimistic bound EV_opt (not the no-stop EV), and the per-dipped-winner loss is (tp-1-0.3) - (-s-0.3) = tp-1+s (the fee cancels).
+- **Fix:** same edit + re-run. Correct formula: **f* = EV_opt / [p_T · (tp - 1 + s)]**, with EV(f) = EV_opt - p_T·f·(tp-1+s).
+- **Before → After:** best cell f* **-1.6897038991409055 → -0.09586592760071291**; f* < 0 at all 42 cells (range -0.0959 to -39.1663). All 42 cells printed in the revised results §4 (all 7 tp rows; the draft printed only 5).
+- **Verification:** same re-run as D1; the corrected table is in `stageB/rerun_tests.json` R_TD rows (42 rows).
+
+## D2. Join-coverage contradiction — ALL THREE takes, MAJOR
+
+- **Defect:** pfamm 88.15% vs creation 87.93% cannot both hold with "100% through Nov 1 and 0% Nov 2–16" — ~106 rows unexplained; the draft's "pfamm = creation = 100% for mt <= Oct 31" was wrong for creation.
+- **Fix:** exact pfamm and creation join counts by split/date from `stageB/rerun_verify_fast.json` + `stageB/joined_v4.pkl` (`created_ts` NaN = creation-missing).
+- **Before → After:** the 106 rows are **all dated Aug 23–31** (9, 14, 18, 9, 19, 9, 7, 7, 14). Creation: archive 24,732/24,838 = **99.57%**, Oct 2–31 16,213/16,213 = 100%, Nov 1 409/409 = 100%, Nov 2–16 0/5,571 = 0%. pfamm: 100% for mt <= Oct 31 (41,051/41,051). Overall: pfamm 41,460/47,031 = 88.15%; creation 41,354/47,031 = 87.93%. Oct 29–30 have ZERO creation-missing rows (checked per-date). The merge §0 E3 note named the cause ("~107 refreshed archive labels lack creation rows"); the count is 106, not 107.
+- **Verification:** `~/workspace/kaggle-venv/bin/python stageB/rerun_fix_r1.py` → `A: archive creation-missing=106 oct=0 overall creation rate=0.879292`.
+
+## D3. Concentration on the PRIMARY policy — ALL THREE takes, required for the NO EDGE ruling
+
+- **Defect:** §5d concentration was computed only on the best subgroup cell, not on the primary (518-trade) policy the verdict rests on.
+- **Fix:** computed top-1/top-5/top-10 positive-payoff shares, leave-best-day-out EV, leave-worst-day-out EV on `stageB/rerun_confirmation_oos_E2h_primary.csv` (n=518).
+- **Before → After:** (new numbers) 108 of 518 trades positive; positive-payoff total +181.7527; largest single payoff +8.7375. **Top-1 share 4.81%; top-5 21.94%; top-10 32.93%. Leave-best-day-out EV -0.5396; leave-worst-day-out EV -0.4436.** The negative EV is broad-based: removing the best day makes it slightly MORE negative; removing the worst day still leaves it at -0.44.
+- **Verification:** `rerun_fix_r1.py` → `B: n=518 pos=108 total=-273.1737 top1=0.0481 top5=0.2194 top10=0.3293 LBO_best=-0.5396 LBO_worst=-0.4436 trade_days=29`.
+
+## D3b. §5d inverted sentence — ALL THREE takes
+
+- **Defect:** "The cell is negative even without its best day" — for a negative cell, removing the best day makes it more negative, which proves nothing.
+- **Fix:** sentence corrected in the revised results §5d.
+- **Before → After:** robustness for a negative cell is remaining negative without its WORST day: **-0.3411** (best subgroup cell); primary policy -0.4436.
+- **Verification:** same as D3 (values from `rerun_fix_r1.json` B_primary_concentration and the pre-existing `rerun_tests.json` CONTROL_concentration_best_cell).
+
+## D4. Bootstrap p-value / Holm — ALL THREE takes (COMPLETED — the draft verdict's open item)
+
+- **Defect:** literal p = 0.0 / < 0.0001. A bootstrap with B=10,000 cannot return an exact zero; 0/10,000 bootstrap means >= 0 is a finite-sample bound, not a point zero. Null, test statistic, and resampling procedure were unspecified.
+- **Fix:** exact finite-sample bounds; procedure specified from `stageB/rerun_confirmation.py` `dayblock_ci` (resamples whole UTC days with replacement, B=10,000, seed=0; p_two_sided = 2 × min(mean(means <= 0), mean(means >= 0)), capped at 1.0). Holm recomputed over the two valid raw p-values.
+- **Before → After:** locked-policy test **two-sided p <= 0.0002** (Phipson–Smyth 2/(B+1) = 2/10,001 = 0.00019998); **one-sided p = 1.0000 for H1: EV > 0** (every bootstrap mean is negative); paired test p = 0.3276 (genuine proportion, stands). Holm-adjusted **[<=0.0004, 0.3276]** (was [0.0, 0.3276]).
+- **Verification:** values read from `stageB/rerun_confirmation.json` (`primary_E2h.p_two_sided_bootstrap` = 0.0, `holm.p_values_sorted` = [0.0, 0.3276]) and corrected arithmetically; the bootstrap procedure was read from the source code, not inferred.
+
+## D5. R-TE / R-LAD quarantine — ALL THREE takes
+
+- **Defect:** R-TE and R-LAD were presented without an explicit unverified-provenance label; the §4 header's "attached 47,031" scope was wrong for these two tests; R-TE per-window n was missing.
+- **Fix:** both relabelled in the revised results §4 as **Nov 3 `wf_results.json` replay (n=6,954, UNVERIFIED provenance — diagnostics only, optimistic upper bound)**. Per-window n published; §4 header scope corrected.
+- **Before → After:** R-TE windows W1 Sep 25–27 (n=1,967), W2 Oct 5–7 (n=2,269), W3 Oct 15–17 (n=1,498), W4 Oct 25–27 (n=1,220); decile 9 n=696, per-window **251/231/200/14** (W4's rotation leg rests on 14 tokens). R-TE best decile 9 tp=3 EV -0.2987, hit 29.5%; R-LAD best 15 trades +0.0522 — both still negative/sub-floor; no regeneration owed.
+- **Verification:** `rerun_fix_r1.py` section G recomputed the window/decile populations from `wf_results.json` → `G: total=6954 days=[...12 days...] decile9=696 per-window={'W1': 251, 'W2': 231, 'W3': 200, 'W4': 14}`.
+
+## D5b. -0.4465 vs -0.4045 reconciliation — ALL THREE takes
+
+- **Defect:** the permutation-scan best (-0.4465) and the best-subgroup best (-0.4045) were unexplained side by side.
+- **Fix:** documented as different scan families.
+- **Before → After:** -0.4465 = best cell of the 77-combo family (bundle_size 5 + age 6, week-wise permutation, no min-n floor). -0.4045 = best cell of the full 497-combo v4 family (bundled_buys_count=0 @ tp=30, n=632). Both are negative; the difference is the family, not an error.
+- **Verification:** `rerun_fix_r1_permutation.py` observed best at floors 0/100/300/500 is -0.4045 in all four cases (same cell).
+
+## D6. R7 11 buckets — ALL THREE takes
+
+- **Defect:** only hour 24 + dow 7 = 31 of the 42 time buckets were re-derived; the other 11 were a flagged manifest gap.
+- **Fix:** identified the 11 as the **ISO calendar weeks W34–W44** (Aug 21–Oct 31) and re-derived them from the attached labels (mt <= Oct 31).
+- **Before → After:** **all 11 reproduced.** Best tp = 3 in every week; all negative at best tp: W34 n=1,693 -0.6291; W35 n=4,985 -0.6110; W36 n=3,651 -0.7001; W37 n=2,799 -0.7091; W38 n=4,266 -0.7431; W39 n=4,587 -0.6088; W40 n=5,178 -0.6959; W41 n=4,787 -0.7291; W42 n=3,821 -0.6535; W43 n=2,935 -0.6854; W44 n=2,349 -0.6228. (R7's original best week W36 -0.0394 was under the old percent formula; under the true formula W36 is -0.7001.) 42 = 24 + 7 + 11; all 42 negative at best tp. The gap is CLOSED by reproduction, not by narrowing the claim. The buckets were descriptive (T-C family), never used in selection/testing/the bar.
+- **Verification:** `rerun_fix_r1.py` → `E: weeks=[...] all_negative=True` (n sums to 41,051).
+
+## D7. E1h/E2h anomaly + Oct 29–30 — Gemini D8, GPT D17, Notion Q9
+
+- **Defect:** E1h has more trades (575 vs 518) and lower DE (1.00 vs 1.40) yet nearly the same CI width; Oct 29–30 zero-trade days were unverified.
+- **Fix:** token-level SE, unfloored DE, tp selection counts, and Oct 27–31 daily diagnostics from both Confirmation OOS CSVs.
+- **Before → After (anomaly EXPLAINED, no DE correction owed):** E1h token-level payoff SD **1.7229** vs E2h **1.4185** (47% larger variance) because E1h trades tp=20 on 66.1% of trades (380/575) vs E2h's 56.8% (294/518). Token SE: E1h 0.0719 vs E2h 0.0623. Day-block boot SDs nearly identical (E1h 0.0717, E2h 0.0737) because E1h's larger token variance × DE ≈ 1.00 equals E2h's smaller token variance × DE = 1.40. The two effects cancel; the CI widths match (0.2852 vs 0.2873). tp counts: E2h {3: 96, 5: 50, 10: 78, 20: 294}; E1h {3: 41, 5: 79, 10: 75, 20: 380}.
+- **Before → After (Oct 29–30 VERIFIED genuine selectivity):** E2h Oct 29: 357 eligible, 3 trades, EV_hat max +1.2494, p99 -0.0268, median -0.6669, 3 tokens with EV_hat >= 0, 0 nonfinite, creation-missing 0.0000. E2h Oct 30: 369 eligible, **0 trades, EV_hat max -0.0439 (every token negative)**, p99 -0.0527, median -0.5785, 0 tokens >= 0, 0 nonfinite, creation-missing 0.0000. E1h Oct 29: 0 trades (max -0.0242); Oct 30: 0 trades (max -0.0693). Predictions exist, are finite, joins complete.
+- **Verification:** `rerun_fix_r1.py` → `C E2h: ... token_sd=1.4185 token_se=0.0623 boot_sd=0.0737 DE_unfloored=1.3985` and `C E1h: ... token_sd=1.7229 token_se=0.0719 boot_sd=0.0717 DE_unfloored=0.9970`, plus the per-day Oct 27–31 lines.
+
+## D8. Permutation control — ALL THREE takes
+
+- **Defect:** §5b covered only a subset (bundle_size + age, 77 combos, week-wise, no min-n floor, B=20); the min-n filter and tp grid were undocumented; the 20 maxima were not all published; no calibrated p-value.
+- **Fix:** expanded to the full 71-cell family (497 combos), **within-day** permutation of (max_x, final_x) pairs, **B=200**, min-n floor n>=100 applied identically to observed and permuted scans. Labels are NOT permuted within the tested strata (that would preserve the association under test); permutation is within day only, features untouched.
+- **Before → After:** observed best **-0.4045** (bundled_buys_count=0 @ tp=30, n=632), unchanged at floors 100/300/500. Null maxima (200 reps): mean **-0.5909**, min -0.6395, max **-0.3036**; **1/200 null maxima >= observed → Phipson–Smyth p = (1+1)/201 = 0.0100**. All 200 maxima published in `stageB/rerun_fix_r1_permutation.json`. Original 20-rep control retained: observed -0.4465, null mean -0.3243, max +0.6439, 9/20 >= observed, **PS p = 0.4762** — no evidence against the null IN THAT FAMILY. The difference is the family + floor + exchangeability scheme: the original's positive null maxima are tiny-cell lottery spikes (one permuted huge winner in a 6-token cell), which the n>=100 floor removes.
+- **Interpretation (narrowed, recorded):** the draft's "no subgroup signal" is too broad. The best cell beats the within-day null at p=0.01 — weak ranking information, consistent with the shuffle control — but it still LOSES -0.4045/trade: **no PROFITABLE subgroup signal**.
+- **Verification:** `~/workspace/kaggle-venv/bin/python stageB/rerun_fix_r1_permutation.py` → `FULL-FAMILY PERMUTATION: observed -0.4045 | null mean -0.5909 max -0.3036 | 1/200 null maxima >= observed | Phipson-Smyth p=0.0100` and `ORIGINAL 20-REP: observed -0.4465 | 9/20 null maxima >= observed | Phipson-Smyth p=0.4762`.
+
+## D9. Calibration / Q2 overclaim — Notion D5, GPT D12, Gemini Q2
+
+- **Defect:** "calibration … is worthless" was an overclaim; no locked-policy cross-period calibration-and-selection-drift diagnostic existed.
+- **Fix:** diagnostic from the saved OOS predictions (predicted-EV bins vs realized payoff, hit-probability calibration, trade mix by period, day-block uncertainty). Diagnostic only — no re-selection, no new policy. **Conflict with the frozen merge, recorded:** the merge froze the calibrators and tau*; this diagnostic does not re-select anything and does not change the frozen policy.
+- **Before → After:** deterioration **-0.4620, day-block CI [-0.7745, -0.1479], SE 0.1599, z = -2.89** (independent day-block bootstraps, B=10,000 each) — statistically real, not sampling noise; cause unidentified. Predicted-EV bins vs realized (traded sets): Discovery [0.3,1.0) n=34 predicted +0.450 realized **+0.465**, [1.0,∞) n=4 predicted +1.396 realized **+1.229** (ranking worked); Confirmation [0.3,1.0) n=169 predicted +0.590 realized **-0.489** (hit 1.8%), [1.0,∞) n=20 predicted +1.232 realized **+0.080** (hit 10.0%) — ranking collapsed exactly where the model was most confident. Trade mix drifted: tp=20 share 32.9% (Discovery) → 56.8% (Confirmation). Discovery tp=3 hit calibration (predicted-p deciles vs realized hit rate): 0.003/0.014, 0.027/0.050, 0.083/0.120, 0.107/0.130, 0.133/0.166, 0.146/0.174, 0.157/0.142, 0.168/0.147, 0.186/0.162, 0.219/0.198 — reasonably calibrated in September.
+- **Limitation stated:** the Confirmation OOS CSVs save EV_hat_best and tp_policy but NOT per-token predicted hit probabilities, so an October calibration table cannot be built from the saved artifacts; the EV_hat_best-bin table is the available substitute. A full October calibration table would require re-running Confirmation (~2h) and is not owed for the verdict.
+- **Verification:** `rerun_fix_r1.py` → `D: disc EV=-0.0654 (n=289) conf EV=-0.5274 (n=518) diff=-0.4620 CI=[-0.7745, -0.1479] z=-2.89` plus the bin/calibration tables in `rerun_fix_r1.json` D_q2.
+
+## D10. Freeze / run chronology — GPT D8, MAJOR
+
+- **Defect:** the merge is recorded ~21:40 IST (16:10 UTC) but the build is reported ~15:30–17:00 UTC, so some build activity preceded the recorded freeze time.
+- **Fix:** explicit timeline from file mtimes (full precision, UTC) + confirmation that no frozen choice changed after the freeze.
+- **Before → After:** panel phase **15:36–15:55 UTC** (own take 15:36:47, brief 15:37:02, Notion take 15:45:06, Gemini take 15:49:23, GPT take 15:54:37); **merge 16:00:08 UTC = 21:30:08 IST** (the "~21:40 IST" was 10 minutes late); compute **16:00–16:58 UTC** (verify_fast.json 16:00:14, r7_reprice.json 16:00:35, manifest 16:03:03, discovery.py 16:03:17, discovery_summary 16:14:06, tests.py 16:17:06, tests.json 16:18:57, confirmation.py 16:27:52, confirmation.json 16:56:01, results 16:58:07). The "15:30" figure conflated the panel phase with compute. Every script encoding a frozen choice (calibrators, tau*, tp grid) was written at or after 16:03 UTC, after the merge; the frozen choices were decided in the panel phase before any compute script existed. **No frozen choice changed after the freeze; no compute output fed back into a frozen choice.**
+- **Verification:** `ls -la --time-style=full-iso` on the 15 artifacts (see revised results Appendix A).
+
+## D11. Minor / documentary — across takes
+
+| item | take(s) | before → after | verification |
+|---|---|---|---|
+| tau=0.15 LCB | Notion, GPT | "LCBs <= -0.30" for all three blips → exact LCBs **-0.2976 / -0.3934 / -0.3216**; tau=0.15 is 0.0024 ABOVE -0.30. Conclusion unchanged (all three fail the floor). | `rerun_discovery_summary.json` tau_sweep (tau=0.15 lcb -0.2976474757288994) |
+| Reporting-floor days | Notion | "30 days" (ambiguous) → **30 eligible days; 29 actual trade days (E2h), 28 (E1h)**. Floor met under either reading of the merge's ">=20 distinct confirmation UTC days". | `rerun_confirmation.json` (days 30) + `rerun_fix_r1.json` B/C (trade_days 29/28) |
+| Top-decile -0.5249 vs -0.5244 | Gemini, GPT | 0.0005 gap unexplained → **qcut n=1,622 EV -0.5249 vs strict rank n=1,621 EV -0.5244**; one boundary token (payoff -1.2340); HGB probabilities discrete at the boundary. Tail slices populated: top10 n=1,621 -0.5244; top5 n=811 -0.6174; top2 n=324 -0.5425; top1 n=162 -0.5540. Stage 2 Oct tp=3: n=16,213, EV -0.6846. | `rerun_topdecile.json` (decile 9 qcut -0.5248506302648206; top10 strict -0.5244131583228497) + `rerun_topdecile_predictions.csv` (overall -0.684567) |
+| Overbroad absence claims | Notion, GPT, Gemini | "no tp choice that wins" / "even the oracle loses" / "every bucket" → narrowed to the tested populations: **the fixed-tp-selection oracle loses in every window** (fixed-tp choice only); "every bucket" → the 42 re-derived buckets / the 497-combo family as applicable. | Revised results §§4, 6 |
+| R-TF "archive/train" | Gemini | Unmapped file names → **archive = Discovery window (Aug 21–Oct 1); train = Oct 2–Nov 16 (Confirmation + November)**. | `rerun_verify_fast.json` (archive Aug 21–Oct 1 n=24,838) |
+| Calibrator logloss denominator (tp=10 isotonic 20/28 days) | Notion | Mismatched denominators → **shared-day recompute: Platt 0.076471 vs isotonic 0.082315 on the shared 20 days — Platt still wins by 0.005844; frozen choice stands**. Recompute reproduced both original means to +0.000000. | `stageB/rerun_fix_r1_calibrator_tp10.py` → `SHARED-DAY (n=20): Platt 0.076471 vs Isotonic 0.082315 -> winner platt` |
+| Fee interpretation | GPT | "The loss is NOT a fee artifact" (causal) → **"still negative under the assumed 0.025 fee"** (real-fee -0.2524 E2h / -0.2667 E1h). | `rerun_confirmation.json` realfee_ev_per_trade |
+| Shuffle inference | Gemini | "Ranking signal is real, not a leak" → **ranking-signal diagnostic: consistent with ranking better than chance; does not prove no leak**. | Revised results §5a |
+| November leg 9 | GPT | Label-only baseline presented as the leg-9 test → **frozen policy NOT evaluated on Nov 2–16 (0% join → no features → no EV_hat → no trades); Nov 1 feature diagnostic n=409, top decile -0.9335**. Leg 9 is a same-direction check, not a same-policy test. | `rerun_verify_fast.json` join coverage + `rerun_tests.json` R_NOV |
+| Leg 7 implementability | GPT, Notion | PASS → **UNVERIFIED**. The §5c audit is source-code inspection + R-H3 200/200 timestamp spot-check + creator-prior 12/12 spot-checks; the frozen policy was never packaged/executed as a notebook. **Conflict with the draft, recorded:** the draft claimed PASS; the fix downgrades it. Verdict unaffected (NO EDGE either way). | Revised results §5c/§7/§8 |
+| E2h half-total precision | GPT | "-273.1960 vs -273.17" (rounded half EVs) → **unrounded half totals: -118.785310 (n=266) + -154.388357 (n=252) = -273.173667 = total exactly**. E1h: -152.144616 + -159.355161 = -311.499777. | `rerun_fix_r1.py` → `C halves E2h: h1 total=-118.785310 h2 total=-154.388357 sum=-273.173667 total=-273.173667`; `rerun_confirmation.json` halves (full precision) |
+
+## Defects NOT fixed
+
+**None.** Every defect in all three R1 takes is fixed above, or explicitly recorded with its reason where a fix was a narrowing/documentation rather than a recomputation (D5b, D9-limitation, D11-leg-7). Two items are recorded as limitations rather than fixes, by design:
+1. **October per-token predicted probabilities were not saved** (D9): an October calibration table cannot be built from the saved artifacts. A Confirmation re-run (~2h) would be needed; it is not owed for the verdict because the policy loses in October under every measurement that exists.
+2. **wf_results.json provenance remains UNVERIFIED** (D5): the generating code is gone. R-TE/R-LAD stay quarantined as diagnostics-only; both are negative, so no regeneration is owed.
+
+## Draft verdict (for R2)
+
+**NO EDGE** (revised results §8). The merge §4 NO EDGE clause fires: the strongest candidate's CI upper bound (-0.3732) <= 0; the strict INCONCLUSIVE trigger (eff n < 2,500 AND CI includes 0) does NOT fire. Defect 4 completed: two-sided p <= 0.0002, one-sided p = 1.0000 for EV > 0, Holm [<=0.0004, 0.3276]. Full bar-leg table in revised results §7/§8: legs 1–6 FAIL (leg 6 on direction), leg 7 UNVERIFIED, leg 8 all negative, leg 9 consistent. Submission consequence either way: **NO CHANGE to v1 skip-all**. The final `RE_RUN_VERDICT_2026-11-18.md` is NOT written — R2 re-reviews the revised results + draft verdict first.
