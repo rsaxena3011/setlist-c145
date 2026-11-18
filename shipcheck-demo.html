@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>ShipCheck demo</title>
+<title>DryRun demo</title>
 <style>
 /* Panel CSS, inlined VERBATIM from static/shipcheck-panel/styles.css */
 /* ShipCheck panel — one visual language: verdict colour carries the state,
@@ -129,7 +129,7 @@ footer { margin-top: 18px; padding-top: 10px; border-top: 1px solid #dfe1e6; col
     <div id="error" class="state hidden"></div>
     <div id="panel" class="hidden">
       <header>
-        <h1 id="app-name">ShipCheck</h1>
+        <h1 id="app-name">DryRun</h1>
         <span id="issue-key" class="issue-key"></span>
       </header>
       <p id="issue-summary" class="issue-summary"></p>
@@ -163,7 +163,7 @@ footer { margin-top: 18px; padding-top: 10px; border-top: 1px solid #dfe1e6; col
 <script>
 // ShipCheck verdict engine, embedded VERBATIM from shipcheck/src/engine.js.
 // No line edited. The one-line shim above gives it a module object.
-// ShipCheck verdict engine — PURE deterministic rules. No Forge imports.
+// DryRun verdict engine — PURE deterministic rules. No Forge imports.
 // The verdict is computed only from live Jira fields. Unknown is never a pass.
 //
 // Input: a raw Jira issue JSON as returned by GET /rest/api/3/issue/{key}
@@ -252,7 +252,7 @@ function evaluateIssue(issue, options = {}) {
       result: 'unknown',
       severity: 'risk',
       evidence: 'No issue data returned from Jira.',
-      reason: 'ShipCheck could not read the issue, so no readiness claim can be made.',
+      reason: 'DryRun could not read the issue, so no readiness claim can be made.',
       source: { type: 'issue', key: (issue && issue.key) || 'unknown' },
       nextStep: 'Re-open the issue and retry. If it persists, check app permissions.',
     });
@@ -514,7 +514,7 @@ function finish(verdict, receipts, extra = {}) {
     const b = failing.find((r) => r.severity === 'blocker');
     summary = `BLOCKED — ${b ? b.evidence : 'a blocking check failed.'}`;
   } else if (verdict === 'INSUFFICIENT EVIDENCE') {
-    summary = 'INSUFFICIENT EVIDENCE — ShipCheck could not read enough to judge. Unknown is never a pass.';
+    summary = 'INSUFFICIENT EVIDENCE — DryRun could not read enough to judge. Unknown is never a pass.';
   } else {
     summary = `AT RISK — ${failing.length} check${failing.length === 1 ? '' : 's'} failing: ` +
       failing.map((r) => r.check.toLowerCase()).join(', ') + '.';
@@ -548,11 +548,11 @@ module.exports = { evaluateIssue, summarizeDelta, STALE_DAYS };
 <script>
 /* ShipCheck demo app. Port of static/shipcheck-panel/index.js render logic;
    Forge bridge calls are replaced by the mock invoke below. */
-const APP_NAME = 'ShipCheck';
+const APP_NAME = 'DryRun';
 const FROZEN_NOW = '2026-11-18T09:00:00Z';
 const Engine = module.exports;
-const evaluateIssue = Engine.evaluateIssue;
-const summarizeDelta = Engine.summarizeDelta;
+const evalIssue = Engine.evaluateIssue;
+const summarizeDeltaFn = Engine.summarizeDelta;
 
 const $ = (id) => document.getElementById(id);
 const txt = (el, s) => { el.textContent = sanitizeDisplay(s); };
@@ -934,7 +934,7 @@ async function invoke(route, payload) {
     if (!issue) {
       return { ok: false, error: 'Could not read ' + issueKey + ' from Jira (no fixture bound).' };
     }
-    const result = evaluateIssue(issue, { now: FROZEN_NOW });
+    const result = evalIssue(issue, { now: FROZEN_NOW });
     return { ok: true, issueKey, issueSummary: (issue.fields && issue.fields.summary) || issueKey, ...result };
   }
   if (route === 'rehearseWhatIf') {
@@ -950,9 +950,9 @@ async function invoke(route, payload) {
     if (!issue) {
       return { ok: false, error: 'Could not read ' + issueKey + ' from Jira (no fixture bound).' };
     }
-    const real = evaluateIssue(issue, { now: FROZEN_NOW });
-    const hypo = evaluateIssue(issue, { now: FROZEN_NOW, resolveKeys });
-    return { ok: true, issueKey, real, rehearsed: hypo, resolveKeys, delta: summarizeDelta(real, hypo, resolveKeys) };
+    const real = evalIssue(issue, { now: FROZEN_NOW });
+    const hypo = evalIssue(issue, { now: FROZEN_NOW, resolveKeys });
+    return { ok: true, issueKey, real, rehearsed: hypo, resolveKeys, delta: summarizeDeltaFn(real, hypo, resolveKeys) };
   }
   return { ok: false, error: 'Unknown route: ' + route + '.' };
 }
