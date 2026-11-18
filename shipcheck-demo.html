@@ -174,6 +174,24 @@ footer { margin-top: 18px; padding-top: 10px; border-top: 1px solid #dfe1e6; col
 // DryRun verdict engine — PURE deterministic rules. No Forge imports.
 // The verdict is computed only from live Jira fields. Unknown is never a pass.
 //
+// Pinned rules (adversarial round, 2026-11-18 — see FIX_ADVERSARIAL_2026-11-18.md):
+//   * Unknown is never a pass AND never a fail: data the engine cannot
+//     read surfaces as UNKNOWN, never silently resolved either way.
+//   * Done exemption (Rules 4 and 5 ONLY): a Done issue's due date and
+//     last-update age do not block shipping — the work is finished. The
+//     exemption never covers blockers or subtasks, and the receipts NAME
+//     it exactly when it applies.
+//   * A blocker/subtask status the engine cannot read (no status object,
+//     or neither a statusCategory key nor a name) is UNKNOWN. A name with
+//     no category is readable evidence of not-Done; only the category key
+//     proves Done.
+//   * Omitted field vs explicit null are different: omitted means Jira did
+//     not return the field (unknown); explicit null means the field has no
+//     value (known failure for owner/due date).
+//   * A future `updated` timestamp is invalid evidence (unknown), never
+//     fresh. A YYYY-MM-DD due date must round-trip its calendar
+//     components — 2026-11-31 and 2026-02-30 are unknown, never normalised.
+//
 // Input: a raw Jira issue JSON as returned by GET /rest/api/3/issue/{key}
 //   with fields=summary,status,assignee,duedate,updated,subtasks,issuelinks.
 // Options: { resolveKeys: string[] } — what-if rehearsal: blocker keys
@@ -189,6 +207,19 @@ const STALE_DAYS = 30;
 
 function isDone(status) {
   return Boolean(status && status.statusCategory && status.statusCategory.key === 'done');
+}
+
+// Three-state status read (adversarial round, D6/D7). 'done' only when the
+// statusCategory key says so — a name alone never proves Done. 'unknown'
+// when there is nothing readable at all (no status object, or neither a
+// category key nor a non-empty name). Anything else readable is 'not-done':
+// a name like "In Progress" is evidence the work is not finished, even
+// without a category.
+function statusState(status) {
+  if (isDone(status)) return 'done';
+  if (status && status.statusCategory && typeof status.statusCategory.key === 'string' && status.statusCategory.key.trim().length > 0) return 'not-done';
+  if (status && typeof status.name === 'string' && status.name.trim().length > 0) return 'not-done';
+  return 'unknown';
 }
 
 function statusName(status) {
@@ -288,7 +319,22 @@ function assigneeDisplayName(assignee) {
 // day starts" — an issue due today is not overdue at 09:00.
 // Returns the end-of-day timestamp in ms, or null when the date string
 // cannot be read as a date at all (garbage in is unknown, never a pass).
+// A YYYY-MM-DD string must round-trip its calendar components: JS Date
+// silently normalises 2026-11-31 to Dec 1 and 2026-02-30 to Mar 2, so those
+// are rejected here instead of being read as real dates (adversarial
+// round, D5). Non-date-only strings keep the Date-parse path (NaN -> null).
 function dueDateEndMs(dueDate) {
+  if (typeof dueDate === 'string') {
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dueDate);
+    if (m) {
+      const y = Number(m[1]);
+      const mo = Number(m[2]);
+      const d = Number(m[3]);
+      const built = new Date(Date.UTC(y, mo - 1, d));
+      if (built.getUTCFullYear() !== y || built.getUTCMonth() !== mo - 1 || built.getUTCDate() !== d) return null;
+      return built.getTime() + (24 * 60 * 60 * 1000 - 1);
+    }
+  }
   const end = new Date(dueDate + 'T23:59:59.999Z').getTime();
   if (Number.isNaN(end)) return null;
   return end;
@@ -301,34 +347,58 @@ function evaluateIssue(issue, options = {}) {
   const fields = (issue && issue.fields) || null;
 
   // --- Evidence completeness: if the issue body itself is missing, we know
-  // nothing. Unknown is never a pass.
+  // nothing. Unknown is never a pass. The count stays six: all six checks
+  // are unknown, not one (adversarial round, D14 — a missing body used to
+  // read 0/1).
   if (!fields) {
-    receipts.push({
-      id: 'evidence-complete',
-      check: 'Evidence complete',
-      result: 'unknown',
-      severity: 'risk',
-      evidence: 'No issue data returned from Jira.',
-      reason: 'DryRun could not read the issue, so no readiness claim can be made.',
-      source: { type: 'issue', key: (issue && issue.key) || 'unknown' },
-      nextStep: 'Re-open the issue and retry. If it persists, check app permissions.',
-    });
+    for (const [id, check] of [
+      ['open-blockers', 'Open blockers'],
+      ['subtasks-complete', 'Subtasks complete'],
+      ['assignee-set', 'Owner assigned'],
+      ['due-date', 'Due date set'],
+      ['freshness', 'Recently updated'],
+      ['evidence-complete', 'Evidence complete'],
+    ]) {
+      receipts.push({
+        id,
+        check,
+        result: 'unknown',
+        severity: id === 'open-blockers' ? 'blocker' : 'risk',
+        evidence: 'No issue data returned from Jira.',
+        reason: 'DryRun could not read the issue, so no readiness claim can be made.',
+        source: { type: 'issue', key: (issue && issue.key) || 'unknown' },
+        nextStep: 'Re-open the issue and retry. If it persists, check app permissions.',
+      });
+    }
     return finish('INSUFFICIENT EVIDENCE', receipts);
   }
 
   const issueStatus = fields.status || null;
   const done = isDone(issueStatus);
   const { blockers, unreadable: blockersUnreadable } = extractBlockers(issue);
+  // Only a blocker whose status is READABLY not-Done is open. A blocker
+  // with an unreadable status is unknown data, never an open blocker and
+  // never a resolved one (adversarial round, D6).
+  const blockersUnknownStatus = blockers.some((b) => statusState(b.status) === 'unknown');
   const openBlockers = blockers.filter(
-    (b) => !isDone(b.status) && !resolveKeys.has(b.key),
+    (b) => statusState(b.status) === 'not-done' && !resolveKeys.has(b.key),
   );
   const resolvedByRehearsal = blockers.filter(
-    (b) => !isDone(b.status) && resolveKeys.has(b.key),
+    (b) => statusState(b.status) === 'not-done' && resolveKeys.has(b.key),
   );
   const { subtasks, unreadable: subtasksUnreadable } = extractSubtasks(issue);
-  const incompleteSubtasks = subtasks.filter((s) => !isDone(s.status));
-  const assignee = fields.assignee || null;
-  const dueDate = fields.duedate || null;
+  // Same three-state read for subtasks (adversarial round, D7): an
+  // unreadable status is unknown, never unfinished.
+  const subtasksUnknownStatus = subtasks.some((s) => statusState(s.status) === 'unknown');
+  const incompleteSubtasks = subtasks.filter((s) => statusState(s.status) === 'not-done');
+  // Omitted vs explicit null (adversarial round, D8/D9): a missing key means
+  // Jira did not return the field at all (unknown); an explicit null is a
+  // field with no value (known failure). The undefined guard is for JS
+  // callers — Jira JSON never carries explicit undefined.
+  const hasAssignee = 'assignee' in fields && fields.assignee !== undefined;
+  const assignee = hasAssignee ? fields.assignee : null;
+  const hasDueDate = 'duedate' in fields && fields.duedate !== undefined;
+  const dueDate = hasDueDate ? fields.duedate : null;
   // Freshness decision is an EXACT-ms comparison (see Rule 5): "more than 30
   // days ago" means now - updated > 30 * 24h, not whole days (rule
   // clarification 2026-11-18, stress review R1 B2). daysSince survives only
@@ -338,10 +408,26 @@ function evaluateIssue(issue, options = {}) {
 
   // Evidence shape check: subtasks / links must be present as arrays. If the
   // API shape changes and they come back undefined, say so instead of
-  // treating absence as "none".
+  // treating absence as "none". Adversarial round, D11: the check covers
+  // ALL required fields, not just the two arrays — a field whose null-ness
+  // is already given a distinct meaning by its own rule (null assignee is
+  // Rule 3's known failure, null duedate is Rule 4's, null updated is Rule
+  // 5's unknown) counts as present; a field whose null-ness is silently
+  // absorbed (status — isDone(null) is just false) counts as absent, because
+  // this check is the only place a missing status surfaces.
   const linksPresent = Array.isArray(fields.issuelinks);
   const subtasksPresent = Array.isArray(fields.subtasks);
-  const evidenceComplete = linksPresent && subtasksPresent;
+  const statusPresent = fields.status != null;
+  const evidenceComplete = linksPresent && subtasksPresent && hasAssignee &&
+    hasDueDate && ('updated' in fields && fields.updated !== undefined) && statusPresent;
+  const evidenceMissing = [
+    !linksPresent ? 'linked issues' : null,
+    !subtasksPresent ? 'subtasks' : null,
+    !hasAssignee ? 'assignee' : null,
+    !hasDueDate ? 'due date' : null,
+    !('updated' in fields && fields.updated !== undefined) ? 'updated date' : null,
+    !statusPresent ? 'status' : null,
+  ].filter(Boolean);
 
   // --- Rule 1: open blockers (severity: blocker)
   // If Jira did not return links at all, this check is unknown — absence of
@@ -367,6 +453,20 @@ function evaluateIssue(issue, options = {}) {
       severity: 'blocker',
       evidence: 'A linked issue entry could not be read.',
       reason: 'Blockers cannot be checked when a linked-issue entry is unreadable.',
+      source: { type: 'issue', key: issue.key },
+      nextStep: 'Retry the check. If it persists, check the data returned by Jira.',
+    });
+  } else if (blockersUnknownStatus) {
+    // A blocker whose status cannot be read is unknown data: DryRun cannot
+    // tell whether it is open, so it cannot call it open (adversarial
+    // round, D6). Unknown is never a fail either.
+    receipts.push({
+      id: 'open-blockers',
+      check: 'Open blockers',
+      result: 'unknown',
+      severity: 'blocker',
+      evidence: 'A linked blocker has no readable status.',
+      reason: 'Blockers cannot be checked when a linked blocker status is unreadable.',
       source: { type: 'issue', key: issue.key },
       nextStep: 'Retry the check. If it persists, check the data returned by Jira.',
     });
@@ -422,6 +522,19 @@ function evaluateIssue(issue, options = {}) {
       source: { type: 'issue', key: issue.key },
       nextStep: 'Retry the check. If it persists, check the data returned by Jira.',
     });
+  } else if (subtasksUnknownStatus) {
+    // A subtask whose status cannot be read is unknown data, never
+    // unfinished (adversarial round, D7).
+    receipts.push({
+      id: 'subtasks-complete',
+      check: 'Subtasks complete',
+      result: 'unknown',
+      severity: 'risk',
+      evidence: 'A subtask has no readable status.',
+      reason: 'Sub-work cannot be checked when a subtask status is unreadable.',
+      source: { type: 'issue', key: issue.key },
+      nextStep: 'Retry the check. If it persists, check the data returned by Jira.',
+    });
   } else if (incompleteSubtasks.length > 0) {
     receipts.push({
       id: 'subtasks-complete',
@@ -455,7 +568,20 @@ function evaluateIssue(issue, options = {}) {
   // "Assigned to undefined" and still pass; that was a bug (stress test
   // 2026-11-18, E30/E32/R17). Whitespace-only identifying fields name
   // nobody either (stress review R1, M1) — the fields are trimmed.
-  if (!assigneeIdentified(assignee)) {
+  // Omitted (Jira did not return the field) is unknown; explicit null is a
+  // known failure (adversarial round, D9).
+  if (!hasAssignee) {
+    receipts.push({
+      id: 'assignee-set',
+      check: 'Owner assigned',
+      result: 'unknown',
+      severity: 'risk',
+      evidence: 'Assignee was not returned by Jira.',
+      reason: 'Ownership cannot be checked without the assignee field.',
+      source: { type: 'field', key: issue.key, field: 'assignee' },
+      nextStep: 'Retry the check. If it persists, check app permissions.',
+    });
+  } else if (!assigneeIdentified(assignee)) {
     receipts.push({
       id: 'assignee-set',
       check: 'Owner assigned',
@@ -480,7 +606,20 @@ function evaluateIssue(issue, options = {}) {
   }
 
   // --- Rule 4: due date
-  if (!dueDate) {
+  // Omitted (Jira did not return the field) is unknown; explicit null is a
+  // known failure — no due date (adversarial round, D8).
+  if (!hasDueDate) {
+    receipts.push({
+      id: 'due-date',
+      check: 'Due date set',
+      result: 'unknown',
+      severity: 'risk',
+      evidence: 'Due date was not returned by Jira.',
+      reason: 'The due date cannot be checked without the duedate field.',
+      source: { type: 'field', key: issue.key, field: 'duedate' },
+      nextStep: 'Retry the check. If it persists, check app permissions.',
+    });
+  } else if (!dueDate) {
     receipts.push({
       id: 'due-date',
       check: 'Due date set',
@@ -516,6 +655,20 @@ function evaluateIssue(issue, options = {}) {
       source: { type: 'field', key: issue.key, field: 'duedate' },
       nextStep: 'Re-plan the date or close the remaining work.',
     });
+  } else if (done && dueDateEndMs(dueDate) < now.getTime()) {
+    // Done exemption, named (adversarial round, D3): the work is finished,
+    // so a past due date no longer blocks shipping. The exemption covers
+    // Rules 4 and 5 only — never blockers or subtasks.
+    receipts.push({
+      id: 'due-date',
+      check: 'Due date set',
+      result: 'pass',
+      severity: 'risk',
+      evidence: `Due ${dueDate} (past). Done, so the due date no longer blocks shipping.`,
+      reason: 'The work is finished; a past due date is not a ship risk.',
+      source: { type: 'field', key: issue.key, field: 'duedate' },
+      nextStep: 'None.',
+    });
   } else {
     receipts.push({
       id: 'due-date',
@@ -536,6 +689,8 @@ function evaluateIssue(issue, options = {}) {
   // stale. Rule clarification 2026-11-18 (stress review R1, B2) — no
   // document pins whole-day flooring; the spec's own words are
   // "Updated > 30 days ago". The floored day count is display text only.
+  // A future updated date is invalid evidence (unknown), never fresh
+  // (adversarial round, D2 — a ticket "updated tomorrow" used to pass).
   if (Number.isNaN(updatedMs)) {
     receipts.push({
       id: 'freshness',
@@ -547,6 +702,17 @@ function evaluateIssue(issue, options = {}) {
       source: { type: 'field', key: issue.key, field: 'updated' },
       nextStep: 'Retry the check. If it persists, check app permissions.',
     });
+  } else if (updatedMs > now.getTime()) {
+    receipts.push({
+      id: 'freshness',
+      check: 'Recently updated',
+      result: 'unknown',
+      severity: 'risk',
+      evidence: `Updated date ${fields.updated} is in the future.`,
+      reason: 'A future updated date is invalid evidence — clock drift or bad data — not proof the issue is fresh.',
+      source: { type: 'field', key: issue.key, field: 'updated' },
+      nextStep: 'Retry the check. If it persists, check the data returned by Jira.',
+    });
   } else if (!done && now.getTime() - updatedMs > STALE_DAYS * 24 * 60 * 60 * 1000) {
     receipts.push({
       id: 'freshness',
@@ -557,6 +723,19 @@ function evaluateIssue(issue, options = {}) {
       reason: 'Stale issues carry stale evidence — status may no longer reflect reality.',
       source: { type: 'field', key: issue.key, field: 'updated' },
       nextStep: 'Confirm the issue state with the owner.',
+    });
+  } else if (done && now.getTime() - updatedMs > STALE_DAYS * 24 * 60 * 60 * 1000) {
+    // Done exemption, named (adversarial round, D3): the work is finished,
+    // so the last-update age no longer blocks shipping.
+    receipts.push({
+      id: 'freshness',
+      check: 'Recently updated',
+      result: 'pass',
+      severity: 'risk',
+      evidence: `Last updated ${updatedDays} days ago. Done, so staleness no longer blocks shipping.`,
+      reason: 'The work is finished; the last-update age is not a ship risk.',
+      source: { type: 'field', key: issue.key, field: 'updated' },
+      nextStep: 'None.',
     });
   } else {
     receipts.push({
@@ -578,10 +757,7 @@ function evaluateIssue(issue, options = {}) {
       check: 'Evidence complete',
       result: 'unknown',
       severity: 'risk',
-      evidence: `Jira did not return ${[
-        !linksPresent ? 'linked issues' : null,
-        !subtasksPresent ? 'subtasks' : null,
-      ].filter(Boolean).join(' and ')}.`,
+      evidence: `Jira did not return ${evidenceMissing.join(', ')}.`,
       reason: 'Missing evidence cannot be treated as passing evidence.',
       source: { type: 'issue', key: issue.key },
       nextStep: 'Retry the check. If it persists, check app permissions.',
@@ -592,7 +768,7 @@ function evaluateIssue(issue, options = {}) {
       check: 'Evidence complete',
       result: 'pass',
       severity: 'info',
-      evidence: 'Linked issues and subtasks were read.',
+      evidence: 'Linked issues, subtasks, assignee, due date, updated date and status were read.',
       reason: 'Every check ran against live data.',
       source: { type: 'issue', key: issue.key },
       nextStep: 'None.',
@@ -643,6 +819,9 @@ function finish(verdict, receipts, extra = {}) {
 }
 
 // Human-readable delta between a real verdict and a rehearsed one.
+// Adversarial round, D12: unknown receipts are counted separately from
+// failing ones — the delta must NEVER claim "All checks would pass" while
+// any check is still unknown.
 function summarizeDelta(real, hypo, resolveKeys) {
   const keys = resolveKeys || [];
   if (real.verdict === hypo.verdict) {
@@ -650,13 +829,53 @@ function summarizeDelta(real, hypo, resolveKeys) {
       `${hypo.checksPassed - real.checksPassed} more check(s) would pass.`;
   }
   const remaining = hypo.receipts.filter((r) => r.result === 'fail');
-  return `Resolving ${keys.join(', ')} would move the verdict from ${real.verdict} to ${hypo.verdict}.` +
-    (remaining.length > 0
-      ? ` Still failing: ${remaining.map((r) => r.check.toLowerCase()).join(', ')}.`
-      : ' All checks would pass.');
+  const stillUnknown = hypo.receipts.filter((r) => r.result === 'unknown');
+  let out = `Resolving ${keys.join(', ')} would move the verdict from ${real.verdict} to ${hypo.verdict}.`;
+  if (remaining.length > 0) {
+    out += ` Still failing: ${remaining.map((r) => r.check.toLowerCase()).join(', ')}.`;
+  }
+  if (stillUnknown.length > 0) {
+    out += ` Still unknown: ${stillUnknown.map((r) => r.check.toLowerCase()).join(', ')}. DryRun cannot claim the remaining checks pass.`;
+  }
+  if (remaining.length === 0 && stillUnknown.length === 0) {
+    out += ' All checks would pass.';
+  }
+  return out;
 }
 
-module.exports = { evaluateIssue, summarizeDelta, STALE_DAYS };
+// Validate a rehearsal's resolveKeys against the issue's real blockers
+// (adversarial round, D13). The UI only offers open blockers, but the
+// resolver accepts arbitrary keys — a forged or stale call must get a clear
+// error instead of a silent no-op. Returns { ok: true } or
+// { ok: false, error }. evaluateIssue itself stays pure and does not
+// validate (it has no error channel); both routes that accept resolveKeys
+// call this first.
+function validateResolveKeys(issue, resolveKeys) {
+  const issueKey = (issue && issue.key) || 'unknown';
+  if (!Array.isArray(resolveKeys) || resolveKeys.length === 0) {
+    return { ok: false, error: 'Pick at least one blocker to rehearse resolving.' };
+  }
+  const { blockers } = extractBlockers(issue);
+  for (const key of resolveKeys) {
+    if (typeof key !== 'string' || key.length === 0) {
+      return { ok: false, error: `${String(key)} is not an open blocker of ${issueKey}.` };
+    }
+    const match = blockers.find((b) => b.key === key);
+    if (!match) {
+      return { ok: false, error: `${key} is not an open blocker of ${issueKey}.` };
+    }
+    const state = statusState(match.status);
+    if (state === 'done') {
+      return { ok: false, error: `${key} is already Done; there is nothing to rehearse resolving.` };
+    }
+    if (state === 'unknown') {
+      return { ok: false, error: `${key} has no readable status, so DryRun cannot tell whether it is open.` };
+    }
+  }
+  return { ok: true };
+}
+
+module.exports = { evaluateIssue, summarizeDelta, validateResolveKeys, statusState, STALE_DAYS };
 </script>
 <script>
 /* ShipCheck demo app. Port of static/shipcheck-panel/index.js render logic;
@@ -666,6 +885,7 @@ const FROZEN_NOW = '2026-11-18T09:00:00Z';
 const Engine = module.exports;
 const evalIssue = Engine.evaluateIssue;
 const summarizeDeltaFn = Engine.summarizeDelta;
+const validateResolveKeysFn = Engine.validateResolveKeys;
 
 const $ = (id) => document.getElementById(id);
 const txt = (el, s) => { el.textContent = sanitizeDisplay(s); };
@@ -693,7 +913,7 @@ const RESULT_ICON = { pass: '✓', fail: '✕', unknown: '?' };
 const SCENARIOS = [
   {
     "id": "SCENARIO_1",
-    "label": "[1/7] SHIP-1 : BLOCKED (4/6) : Anchor + What-If Rehearsal (2 blockers, 1 subtask)",
+    "label": "[1/7] SHIP-1 : BLOCKED (4/6) : Anchor + What-If Rehearsal (2 blockers, 2 subtasks)",
     "proof": "Anchor: BLOCKED by 2 open blockers. Rehearse both to see AT RISK.",
     "fixtureOnly": false,
     "issue": {
@@ -989,7 +1209,7 @@ const SCENARIOS = [
   },
   {
     "id": "SCENARIO_7",
-    "label": "[7/7] SHIP-4 [FIXTURE ONLY] : INSUFFICIENT EVIDENCE (3/6) : Missing links and subtasks arrays",
+    "label": "[7/7] SHIP-4 [FIXTURE ONLY — missing arrays]: INSUFFICIENT EVIDENCE (3/6)",
     "proof": "FIXTURE-ONLY STATE: Omits issuelinks and subtasks keys entirely to prove Rule 6 (Insufficient Evidence). Jira never seeds this shape directly; it tests payload defense.",
     "fixtureOnly": true,
     "issue": {
@@ -1028,6 +1248,7 @@ const EXPECTED = {
 const mockStore = {};
 let activeScenarioId = 'SCENARIO_1';
 let lastResult = null;
+let lastSelfTestFailures = [];
 let showSources = false;
 
 function activeScenario() {
@@ -1062,6 +1283,12 @@ async function invoke(route, payload) {
     const issue = mockStore[issueKey];
     if (!issue) {
       return { ok: false, error: 'Could not read ' + issueKey + ' from Jira (no fixture bound).' };
+    }
+    // D13 (adversarial round): same validation as the Forge route — a
+    // rehearsed key must be a real open blocker, never a silent no-op.
+    const check = validateResolveKeysFn(issue, resolveKeys);
+    if (!check.ok) {
+      return { ok: false, error: check.error };
     }
     const real = evalIssue(issue, { now: FROZEN_NOW });
     const hypo = evalIssue(issue, { now: FROZEN_NOW, resolveKeys });
@@ -1163,7 +1390,11 @@ function renderInspector() {
   if (pre.hidden) return;
   const sc = activeScenario();
   const sources = (lastResult ? lastResult.receipts : []).map((r) => ({ check: r.check, result: r.result, source: r.source }));
-  pre.textContent = JSON.stringify({ scenario: sc.id, issue: sc.issue, receiptSources: sources }, null, 2);
+  // D15 (adversarial round): boot self-test failures are shown here, not
+  // just in console.warn() — the inspector is the visible diagnostic.
+  const out = { scenario: sc.id, issue: sc.issue, receiptSources: sources };
+  if (lastSelfTestFailures.length > 0) out.selfTestFailures = lastSelfTestFailures;
+  pre.textContent = JSON.stringify(out, null, 2);
 }
 
 function showError(message) {
@@ -1211,7 +1442,10 @@ function bindScenario(id) {
   txt(proof, sc.proof);
   proof.classList.toggle('demo-harness-amber', !!sc.fixtureOnly);
   $('rehearsal').classList.add('hidden');
-  $('demo-harness-inspector').hidden = true;
+  // D15: when the boot self-test failed, the inspector stays open so the
+  // failure details are visible without a toggle click (bindScenario runs
+  // after the self-test, so an unconditional hide here would undo it).
+  $('demo-harness-inspector').hidden = lastSelfTestFailures.length === 0;
 }
 
 async function loadScenario(id) {
@@ -1224,7 +1458,7 @@ async function loadScenario(id) {
 async function runBootSelfTest() {
   const badge = $('demo-harness-selftest');
   let passed = 0;
-  const total = 8;
+  const total = 9;
   const failures = [];
   for (const sc of SCENARIOS) {
     mockStore[sc.issue.key] = sc.issue;
@@ -1244,12 +1478,26 @@ async function runBootSelfTest() {
   } else {
     failures.push('rehearsal SHIP-1: expected AT RISK with BLOCKED to AT RISK delta');
   }
+  // Rehearsal check: SHIP-6 is Done with a past due date and one open
+  // blocker — resolving the blocker must land READY 6/6, because the
+  // Done exemption passes the due-date check (adversarial round, D3).
+  const reh6 = await invoke('rehearseWhatIf', { issueKey: 'SHIP-6', resolveKeys: ['SHIP-22'] });
+  if (reh6.ok && reh6.rehearsed.verdict === 'READY' && reh6.rehearsed.checksPassed === 6 && reh6.delta.indexOf('BLOCKED to READY') !== -1 && reh6.delta.indexOf('All checks would pass') !== -1) {
+    passed++;
+  } else {
+    failures.push('rehearsal SHIP-6: expected READY 6/6 with BLOCKED to READY delta, got ' + (reh6.ok ? reh6.rehearsed.verdict + ' ' + reh6.rehearsed.checksPassed + '/' + reh6.rehearsed.checksTotal : 'error ' + (reh6.error || '')));
+  }
   if (failures.length === 0) {
     txt(badge, 'Self-test: 7/7 verdicts verified');
   } else {
     badge.classList.add('demo-harness-fail');
     txt(badge, 'Self-test: FAILED (' + passed + '/' + total + ' checks passed). See inspector.');
     console.warn('ShipCheck demo self-test failures:', failures);
+    // D15: failures are shown in the inspector on the page, and the
+    // inspector opens itself — a console-only warning is not a diagnostic.
+    lastSelfTestFailures = failures;
+    $('demo-harness-inspector').hidden = false;
+    renderInspector();
   }
   return failures;
 }
