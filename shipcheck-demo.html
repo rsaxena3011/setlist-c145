@@ -90,8 +90,12 @@ footer { margin-top: 18px; padding-top: 10px; border-top: 1px solid #dfe1e6; col
 #demo-harness .demo-harness-proof { color: #cbd5e1; font-size: 12px; margin: 6px 0 0; }
 #demo-harness .demo-harness-proof.demo-harness-amber { color: #fbbf24; font-weight: 700; }
 #demo-harness .demo-harness-toggle { display: flex; gap: 8px; align-items: center; min-height: 44px; cursor: pointer; font-size: 13px; color: #f8fafc; margin-top: 6px; }
-#demo-harness .demo-harness-toggle input { width: 20px; height: 20px; }
+#demo-harness .demo-harness-toggle input { width: 24px; height: 24px; }
 #demo-harness button.demo-harness-jump { display: block; width: 100%; min-height: 44px; background: #f59e0b; color: #1e293b; border: 0; border-radius: 4px; padding: 10px 12px; font-size: 14px; font-weight: 700; cursor: pointer; margin-top: 10px; text-align: left; }
+/* Fix for R1#1/R2#1: the display:block above beats the hidden attribute
+   (UA display:none loses to any author display value), so the strip stayed
+   visible with stale text. This rule restores hidden. */
+#demo-harness button.demo-harness-jump[hidden] { display: none; }
 #demo-harness .demo-harness-divider { text-align: center; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11px; letter-spacing: .04em; color: #94a3b8; margin: 12px 0 0; }
 #demo-harness-bottom { background: #1e293b; border-radius: 6px; padding: 12px; margin-top: 10px; }
 #demo-harness-bottom button.demo-harness-btn { min-height: 44px; background: #334155; color: #f8fafc; border: 1px solid #64748b; border-radius: 4px; padding: 7px 12px; font-size: 14px; cursor: pointer; }
@@ -102,15 +106,19 @@ footer { margin-top: 18px; padding-top: 10px; border-top: 1px solid #dfe1e6; col
    targets to 44px minimum for phone taps. Panel padding/colours unchanged. */
 #shipcheck-panel-mount button { min-height: 44px; }
 #shipcheck-panel-mount .whatif-item { min-height: 44px; align-items: center; }
-#shipcheck-panel-mount .whatif-item input[type="checkbox"] { width: 20px; height: 20px; flex-shrink: 0; }
-/* Transient highlight ring when the jump strip scrolls to What-if. */
-#shipcheck-panel-mount .demo-harness-highlight { outline: 3px solid #f59e0b; outline-offset: 2px; border-radius: 6px; }
+#shipcheck-panel-mount .whatif-item input[type="checkbox"] { width: 24px; height: 24px; flex-shrink: 0; }
+/* Transient highlight ring when the jump strip scrolls to What-if.
+   4px outline + amber tint + 3s duration (was 3px / 1.5s): R1's ordinary
+   screenshots missed the 1.5s ring, so it now stays visible long enough
+   for a normal screenshot after the tap. */
+#shipcheck-panel-mount .demo-harness-highlight { outline: 4px solid #f59e0b; outline-offset: 2px; border-radius: 6px; background: #fffbeb; }
 </style>
 </head>
 <body>
 <div id="demo-harness">
   <span class="demo-harness-pill">DEMO HARNESS : OFFLINE PHONE PREVIEW</span>
   <p class="demo-harness-meta">No Jira or Forge connection. Using embedded fixtures + real engine.js. Reference clock frozen at 2026-11-18T09:00:00Z.</p>
+  <p class="demo-harness-meta">Panel below is the shipped UI, shown verbatim. In this demo its checks run on the embedded fixtures above, not on live Jira.</p>
   <p class="demo-harness-selftest"><span id="demo-harness-selftest" class="demo-harness-badge">Self-test: running...</span></p>
   <label class="demo-harness-picker-label" for="demo-harness-select">DEMO ONLY: Choose a sample ticket.</label>
   <div class="demo-harness-picker-row">
@@ -774,7 +782,7 @@ const SCENARIOS = [
   },
   {
     "id": "SCENARIO_4",
-    "label": "[4/7] SHIP-4 : AT RISK : Stale update over 30 days old (2026-10-09)",
+    "label": "[4/7] SHIP-4 : AT RISK (5/6) : Stale update over 30 days old (2026-10-09)",
     "proof": "Stale: last updated 2026-10-09, over 30 days old.",
     "fixtureOnly": false,
     "issue": {
@@ -801,7 +809,7 @@ const SCENARIOS = [
   },
   {
     "id": "SCENARIO_5",
-    "label": "[5/7] SHIP-5 : AT RISK : Overdue open issue (due 2026-11-01)",
+    "label": "[5/7] SHIP-5 : AT RISK (5/6) : Overdue open issue (due 2026-11-01)",
     "proof": "Overdue: due 2026-11-01, past, not done.",
     "fixtureOnly": false,
     "issue": {
@@ -828,7 +836,7 @@ const SCENARIOS = [
   },
   {
     "id": "SCENARIO_6",
-    "label": "[6/7] SHIP-6 : BLOCKED : Done issue with open blocker SHIP-22 (Inconsistency)",
+    "label": "[6/7] SHIP-6 : BLOCKED (5/6) : Done issue with open blocker SHIP-22 (Inconsistency)",
     "proof": "Done issue with open blocker SHIP-22. Inconsistency case.",
     "fixtureOnly": false,
     "issue": {
@@ -876,7 +884,7 @@ const SCENARIOS = [
   },
   {
     "id": "SCENARIO_7",
-    "label": "[7/7] SHIP-4 [FIXTURE ONLY] : INSUFFICIENT EVIDENCE : Missing links and subtasks arrays",
+    "label": "[7/7] SHIP-4 [FIXTURE ONLY] : INSUFFICIENT EVIDENCE (3/6) : Missing links and subtasks arrays",
     "proof": "FIXTURE-ONLY STATE: Omits issuelinks and subtasks keys entirely to prove Rule 6 (Insufficient Evidence). Jira never seeds this shape directly; it tests payload defense.",
     "fixtureOnly": true,
     "issue": {
@@ -1035,6 +1043,7 @@ function renderWhatIf(openBlockers) {
 function renderJumpStrip(result) {
   const jump = $('demo-harness-jump');
   if (!result || !result.openBlockers || result.openBlockers.length === 0) {
+    txt(jump, '');
     jump.hidden = true;
     return;
   }
@@ -1168,7 +1177,7 @@ function init() {
     const section = $('whatif-section');
     section.scrollIntoView({ behavior: 'smooth', block: 'center' });
     section.classList.add('demo-harness-highlight');
-    setTimeout(() => section.classList.remove('demo-harness-highlight'), 1500);
+    setTimeout(() => section.classList.remove('demo-harness-highlight'), 3000);
   });
   $('demo-harness-inspector-toggle').addEventListener('click', () => {
     const pre = $('demo-harness-inspector');
@@ -1193,7 +1202,7 @@ function init() {
       }
       const badge = document.createElement('div');
       badge.className = 'verdict-badge ' + (VERDICT_CLASS[rehearsed.rehearsed.verdict] || '');
-      txt(badge, rehearsed.rehearsed.verdict);
+      txt(badge, rehearsed.rehearsed.verdict + ' ' + rehearsed.rehearsed.checksPassed + '/' + rehearsed.rehearsed.checksTotal);
       out.innerHTML = '';
       out.appendChild(badge);
       const delta = document.createElement('p');
@@ -1210,6 +1219,12 @@ function init() {
   $('recheck-btn').addEventListener('click', async () => {
     $('recheck-btn').disabled = true;
     $('recheck-btn').textContent = 'Checking…';
+    // Fix for R1#3/R2#3: the mock re-run is synchronous, so without a real
+    // await the "Checking..." label was set and restored inside one task
+    // and never painted. The shipped panel's Forge round-trip is genuinely
+    // async, so a brief visible loading state is faithful, not invented.
+    // Determinism is unchanged: the same frozen data is re-read.
+    await new Promise((resolve) => setTimeout(resolve, 400));
     try {
       await refreshReadiness(activeScenario().issue.key);
     } finally {
