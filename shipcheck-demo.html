@@ -239,10 +239,12 @@ function daysSince(isoDate, now) {
 
 // A due date means "due by end of that day", not "due at midnight when the
 // day starts" — an issue due today is not overdue at 09:00.
-function dueDateEndsBeforeNow(dueDate, now) {
+// Returns the end-of-day timestamp in ms, or null when the date string
+// cannot be read as a date at all (garbage in is unknown, never a pass).
+function dueDateEndMs(dueDate) {
   const end = new Date(dueDate + 'T23:59:59.999Z').getTime();
-  if (Number.isNaN(end)) return false;
-  return end < now.getTime();
+  if (Number.isNaN(end)) return null;
+  return end;
 }
 
 function evaluateIssue(issue, options = {}) {
@@ -370,7 +372,14 @@ function evaluateIssue(issue, options = {}) {
   }
 
   // --- Rule 3: assignee set
-  if (!assignee) {
+  // An assignee object with no identifying field (no displayName, name or
+  // accountId) names nobody — it is not an owner. The receipt used to read
+  // "Assigned to undefined" and still pass; that was a bug (stress test
+  // 2026-11-18, E30/E32/R17).
+  const assigneeIdentified = Boolean(
+    assignee && (assignee.displayName || assignee.name || assignee.accountId),
+  );
+  if (!assigneeIdentified) {
     receipts.push({
       id: 'assignee-set',
       check: 'Owner assigned',
@@ -406,7 +415,21 @@ function evaluateIssue(issue, options = {}) {
       source: { type: 'field', key: issue.key, field: 'duedate' },
       nextStep: 'Set a due date.',
     });
-  } else if (!done && dueDateEndsBeforeNow(dueDate, now)) {
+  } else if (dueDateEndMs(dueDate) === null) {
+    // A due-date string that cannot be read as a date is unknown data, not
+    // evidence of a date. Unknown is never a pass (stress test 2026-11-18:
+    // "not-a-date", "2026-13-01", "TBD" all used to pass this check).
+    receipts.push({
+      id: 'due-date',
+      check: 'Due date set',
+      result: 'unknown',
+      severity: 'risk',
+      evidence: `Due date "${dueDate}" could not be read as a date.`,
+      reason: 'The due date cannot be checked without a readable date.',
+      source: { type: 'field', key: issue.key, field: 'duedate' },
+      nextStep: 'Fix the due date on the issue and retry.',
+    });
+  } else if (!done && dueDateEndMs(dueDate) < now.getTime()) {
     receipts.push({
       id: 'due-date',
       check: 'Due date set',
