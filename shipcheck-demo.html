@@ -199,35 +199,56 @@ function statusName(status) {
 // on the "Blocks" link type ("is blocked by"), or any link whose inward
 // description says "is blocked by". Outward "blocks" links point the other
 // way (this issue blocks someone else) and are not our blockers.
+// Returns { blockers, unreadable }: an element that cannot be read (null,
+// non-object) makes the check UNKNOWN, never a silent skip and never a
+// throw (stress review R1, B1). A non-array links value is not the
+// extractor's case — the evidence check owns it — so it returns empty here.
 function extractBlockers(issue) {
   const links = (issue.fields && issue.fields.issuelinks) || [];
+  if (!Array.isArray(links)) return { blockers: [], unreadable: false };
   const blockers = [];
   const seen = new Set();
-  for (const link of links) {
+  let unreadable = false;
+  for (let i = 0; i < links.length; i++) {
+    const link = links[i];
+    if (!link || typeof link !== 'object') { unreadable = true; continue; }
     const linked = link.inwardIssue;
     if (!linked) continue;
-    const typeName = (link.type && link.type.name) || '';
+    // link.type may be a bare string ('Blocks') instead of an object (m4).
+    const typeName = (typeof link.type === 'string' ? link.type : (link.type && link.type.name)) || '';
     const inward = (link.type && link.type.inward) || '';
     const blocksUs = typeName === 'Blocks' || inward === 'is blocked by';
     if (!blocksUs) continue;
-    if (seen.has(linked.key)) continue;
-    seen.add(linked.key);
+    // Dedup on the key; a missing key falls back to the element index, so
+    // two key-less blockers count as two instead of collapsing to one (m3).
+    const dedupKey = linked.key || `__nokey_${i}`;
+    if (seen.has(dedupKey)) continue;
+    seen.add(dedupKey);
     blockers.push({
       key: linked.key,
       summary: (linked.fields && linked.fields.summary) || '',
       status: (linked.fields && linked.fields.status) || null,
     });
   }
-  return blockers;
+  return { blockers, unreadable };
 }
 
+// Returns { subtasks, unreadable }: same unreadable-element contract as
+// extractBlockers (stress review R1, B1).
 function extractSubtasks(issue) {
   const subs = (issue.fields && issue.fields.subtasks) || [];
-  return subs.map((s) => ({
-    key: s.key,
-    summary: (s.fields && s.fields.summary) || '',
-    status: (s.fields && s.fields.status) || null,
-  }));
+  if (!Array.isArray(subs)) return { subtasks: [], unreadable: false };
+  const subtasks = [];
+  let unreadable = false;
+  for (const s of subs) {
+    if (!s || typeof s !== 'object') { unreadable = true; continue; }
+    subtasks.push({
+      key: s.key,
+      summary: (s.fields && s.fields.summary) || '',
+      status: (s.fields && s.fields.status) || null,
+    });
+  }
+  return { subtasks, unreadable };
 }
 
 function daysSince(isoDate, now) {
@@ -235,6 +256,32 @@ function daysSince(isoDate, now) {
   const ms = now - new Date(isoDate).getTime();
   if (Number.isNaN(ms)) return null;
   return Math.floor(ms / (1000 * 60 * 60 * 24));
+}
+
+// A field names somebody if it is a string with non-whitespace content, or
+// a finite number (defensive — real Jira ids are strings, but a numeric id
+// still identifies someone). Whitespace-only strings do NOT identify, and a
+// non-string value must never crash a trim (stress review R1, M1).
+function identifies(value) {
+  if (typeof value === 'string') return value.trim().length > 0;
+  return typeof value === 'number' && Number.isFinite(value);
+}
+
+function assigneeIdentified(assignee) {
+  return Boolean(
+    assignee &&
+    (identifies(assignee.displayName) || identifies(assignee.name) || identifies(assignee.accountId)),
+  );
+}
+
+// The display form of the first identifying field, trimmed — so a receipt
+// can never again read "Assigned to    ".
+function assigneeDisplayName(assignee) {
+  for (const field of [assignee.displayName, assignee.name, assignee.accountId]) {
+    if (typeof field === 'string' && field.trim().length > 0) return field.trim();
+    if (typeof field === 'number' && Number.isFinite(field)) return String(field);
+  }
+  return '';
 }
 
 // A due date means "due by end of that day", not "due at midnight when the
@@ -271,17 +318,22 @@ function evaluateIssue(issue, options = {}) {
 
   const issueStatus = fields.status || null;
   const done = isDone(issueStatus);
-  const blockers = extractBlockers(issue);
+  const { blockers, unreadable: blockersUnreadable } = extractBlockers(issue);
   const openBlockers = blockers.filter(
     (b) => !isDone(b.status) && !resolveKeys.has(b.key),
   );
   const resolvedByRehearsal = blockers.filter(
     (b) => !isDone(b.status) && resolveKeys.has(b.key),
   );
-  const subtasks = extractSubtasks(issue);
+  const { subtasks, unreadable: subtasksUnreadable } = extractSubtasks(issue);
   const incompleteSubtasks = subtasks.filter((s) => !isDone(s.status));
   const assignee = fields.assignee || null;
   const dueDate = fields.duedate || null;
+  // Freshness decision is an EXACT-ms comparison (see Rule 5): "more than 30
+  // days ago" means now - updated > 30 * 24h, not whole days (rule
+  // clarification 2026-11-18, stress review R1 B2). daysSince survives only
+  // as display text ("Last updated N days ago").
+  const updatedMs = fields.updated ? new Date(fields.updated).getTime() : NaN;
   const updatedDays = daysSince(fields.updated, now);
 
   // Evidence shape check: subtasks / links must be present as arrays. If the
@@ -305,6 +357,19 @@ function evaluateIssue(issue, options = {}) {
       source: { type: 'issue', key: issue.key },
       nextStep: 'Retry the check. If it persists, check app permissions.',
     });
+  } else if (blockersUnreadable) {
+    // A linked-issue entry that cannot be read is unknown data, not
+    // evidence of no blocker (stress review R1, B1).
+    receipts.push({
+      id: 'open-blockers',
+      check: 'Open blockers',
+      result: 'unknown',
+      severity: 'blocker',
+      evidence: 'A linked issue entry could not be read.',
+      reason: 'Blockers cannot be checked when a linked-issue entry is unreadable.',
+      source: { type: 'issue', key: issue.key },
+      nextStep: 'Retry the check. If it persists, check the data returned by Jira.',
+    });
   } else if (openBlockers.length > 0) {
     receipts.push({
       id: 'open-blockers',
@@ -312,10 +377,10 @@ function evaluateIssue(issue, options = {}) {
       result: 'fail',
       severity: 'blocker',
       evidence: `${openBlockers.length} open blocker${openBlockers.length === 1 ? '' : 's'}: ` +
-        openBlockers.map((b) => `${b.key} (${statusName(b.status)})`).join(', '),
+        openBlockers.map((b) => `${b.key || '(no key)'} (${statusName(b.status)})`).join(', '),
       reason: 'The issue cannot ship while work it depends on is unfinished.',
       source: { type: 'link', key: openBlockers[0].key, summary: openBlockers[0].summary },
-      nextStep: `Resolve or unblock ${openBlockers.map((b) => b.key).join(', ')} first.`,
+      nextStep: `Resolve or unblock ${openBlockers.map((b) => b.key || '(no key)').join(', ')} first.`,
     });
   } else {
     receipts.push({
@@ -344,6 +409,19 @@ function evaluateIssue(issue, options = {}) {
       source: { type: 'issue', key: issue.key },
       nextStep: 'Retry the check. If it persists, check app permissions.',
     });
+  } else if (subtasksUnreadable) {
+    // A subtask entry that cannot be read is unknown data (stress review
+    // R1, B1).
+    receipts.push({
+      id: 'subtasks-complete',
+      check: 'Subtasks complete',
+      result: 'unknown',
+      severity: 'risk',
+      evidence: 'A subtask entry could not be read.',
+      reason: 'Sub-work cannot be checked when a subtask entry is unreadable.',
+      source: { type: 'issue', key: issue.key },
+      nextStep: 'Retry the check. If it persists, check the data returned by Jira.',
+    });
   } else if (incompleteSubtasks.length > 0) {
     receipts.push({
       id: 'subtasks-complete',
@@ -351,10 +429,10 @@ function evaluateIssue(issue, options = {}) {
       result: 'fail',
       severity: 'risk',
       evidence: `${incompleteSubtasks.length} of ${subtasks.length} subtask${subtasks.length === 1 ? '' : 's'} unfinished: ` +
-        incompleteSubtasks.map((s) => `${s.key} (${statusName(s.status)})`).join(', '),
+        incompleteSubtasks.map((s) => `${s.key || '(no key)'} (${statusName(s.status)})`).join(', '),
       reason: 'Unfinished subtasks mean part of the work is still open.',
       source: { type: 'subtask', key: incompleteSubtasks[0].key, summary: incompleteSubtasks[0].summary },
-      nextStep: `Finish ${incompleteSubtasks.map((s) => s.key).join(', ')} or move them out of this issue.`,
+      nextStep: `Finish ${incompleteSubtasks.map((s) => s.key || '(no key)').join(', ')} or move them out of this issue.`,
     });
   } else {
     receipts.push({
@@ -375,11 +453,9 @@ function evaluateIssue(issue, options = {}) {
   // An assignee object with no identifying field (no displayName, name or
   // accountId) names nobody — it is not an owner. The receipt used to read
   // "Assigned to undefined" and still pass; that was a bug (stress test
-  // 2026-11-18, E30/E32/R17).
-  const assigneeIdentified = Boolean(
-    assignee && (assignee.displayName || assignee.name || assignee.accountId),
-  );
-  if (!assigneeIdentified) {
+  // 2026-11-18, E30/E32/R17). Whitespace-only identifying fields name
+  // nobody either (stress review R1, M1) — the fields are trimmed.
+  if (!assigneeIdentified(assignee)) {
     receipts.push({
       id: 'assignee-set',
       check: 'Owner assigned',
@@ -396,7 +472,7 @@ function evaluateIssue(issue, options = {}) {
       check: 'Owner assigned',
       result: 'pass',
       severity: 'risk',
-      evidence: `Assigned to ${assignee.displayName || assignee.name || assignee.accountId}.`,
+      evidence: `Assigned to ${assigneeDisplayName(assignee)}.`,
       reason: 'Someone owns the ship decision.',
       source: { type: 'field', key: issue.key, field: 'assignee' },
       nextStep: 'None.',
@@ -455,7 +531,12 @@ function evaluateIssue(issue, options = {}) {
 
   // --- Rule 5: freshness (stale evidence)
   // A missing updated date is unknown, not fresh — unknown is never a pass.
-  if (updatedDays === null) {
+  // "More than 30 days ago" is an EXACT-ms comparison (now - updated >
+  // 30 * 24h), not whole days: a ticket updated 30 days 23 hours ago IS
+  // stale. Rule clarification 2026-11-18 (stress review R1, B2) — no
+  // document pins whole-day flooring; the spec's own words are
+  // "Updated > 30 days ago". The floored day count is display text only.
+  if (Number.isNaN(updatedMs)) {
     receipts.push({
       id: 'freshness',
       check: 'Recently updated',
@@ -466,7 +547,7 @@ function evaluateIssue(issue, options = {}) {
       source: { type: 'field', key: issue.key, field: 'updated' },
       nextStep: 'Retry the check. If it persists, check app permissions.',
     });
-  } else if (!done && updatedDays > STALE_DAYS) {
+  } else if (!done && now.getTime() - updatedMs > STALE_DAYS * 24 * 60 * 60 * 1000) {
     receipts.push({
       id: 'freshness',
       check: 'Recently updated',
@@ -563,12 +644,13 @@ function finish(verdict, receipts, extra = {}) {
 
 // Human-readable delta between a real verdict and a rehearsed one.
 function summarizeDelta(real, hypo, resolveKeys) {
+  const keys = resolveKeys || [];
   if (real.verdict === hypo.verdict) {
-    return `Resolving ${resolveKeys.join(', ')} would NOT change the verdict — it stays ${real.verdict}. ` +
+    return `Resolving ${keys.join(', ')} would NOT change the verdict — it stays ${real.verdict}. ` +
       `${hypo.checksPassed - real.checksPassed} more check(s) would pass.`;
   }
   const remaining = hypo.receipts.filter((r) => r.result === 'fail');
-  return `Resolving ${resolveKeys.join(', ')} would move the verdict from ${real.verdict} to ${hypo.verdict}.` +
+  return `Resolving ${keys.join(', ')} would move the verdict from ${real.verdict} to ${hypo.verdict}.` +
     (remaining.length > 0
       ? ` Still failing: ${remaining.map((r) => r.check.toLowerCase()).join(', ')}.`
       : ' All checks would pass.');
@@ -1262,3 +1344,4 @@ init();
 </script>
 </body>
 </html>
+
