@@ -1,0 +1,285 @@
+# C109 FIRST-60s PROBE — REVIEW ROUND 1 BRIEF (2026-11-19)
+
+## Your task
+
+You are a hostile, independent reviewer of the completed C109 first-60s probe. The probe asked whether first-minute PumpSwap pool-flow features predict 1-hour price multiples well enough to trade profitably under the hosts' true payoff formula (hit iff max_x >= tp; hit pays tp − 1 − 0.3; miss pays final_x − 1 − 0.3; skip = 0). The frozen design is in the panel merge `SIXTY_SEC_MERGE_2026-11-18.md` (§3.6 policy family, §3.7 the bar, §3.8 verdict criteria, §4 audit acceptance checklist). The kernel ran to completion (v4, ~32 min, CELL7 + CELL8 DONE) on Kaggle and produced the results file and the §12 kernel audit file embedded verbatim below. **No verdict has been claimed yet.** Your review is the first of two hostile rounds; the verdict file is written only after both rounds pass with 0 BLOCKING defects.
+
+Run history (for Q8): v1 died ~18 s in (train.csv not found — label CSVs never attached); v2 died ~15 s in (competition input dir not found — the kernel assumed the flat path `/kaggle/input/<slug>/`, but Kaggle mounts competition data at `/kaggle/input/competitions/<slug>/`; proven by a probe kernel that listed 189 files there); v3 reached the §12 audit (PASS) and crashed ~1774 s in CELL7 on `log()` passed an unexpected `flush` kwarg; v4 dropped that one kwarg (only CELL7 changed) and completed. The v1 skip-all notebook was never touched.
+
+## Output format (mandatory)
+
+**First, a verdict block** — state exactly one of NO EDGE / INCONCLUSIVE / EDGE FOUND / SIGNAL FOUND, NOT SUBMITTABLE, citing the merge §3.8 clause it satisfies, before anything else. Then answer Q1–Q10 below, each with its own heading, recomputing numbers from the values quoted in the embedded files (the `sixtysec_results.json` aggregates are quoted inside the results file — use those, not your memory). Then a defect list, each defect numbered with severity BLOCKING / MAJOR / MINOR and the exact file + line or table cell it refers to. A defect is BLOCKING only if it can change the verdict or the audit's PASS. End with your ruling: READY (0 BLOCKING) or NOT READY (list the BLOCKING defects).
+
+## Questions
+
+**Q1 — Audit validity.** Does AUDIT_PASS = True actually license the build and these results? Check each gating item (1, 2, 3, 5, 6 PASS; 4, 7 report-only) against the merge §4 acceptance checklist: does the audit file's evidence satisfy each item's pass criterion, or is any PASS asserted without the required evidence? In particular, does item 3 (Branch A scale, m_i statistic) genuinely re-confirm Branch A at kernel scale, and does item 2 (November coverage 1.0 every day) support the November guard?
+
+**Q2 — Arithmetic.** Recompute the headline numbers from the `sixtysec_results.json` aggregates quoted in the results file and confirm or correct them: p1 EV −0.6842 with CI [−1.0755, −0.3212] and floored −0.4866; the full Confirmation EV range −0.2745 to −0.7144; the halves for every policy; the E1h sensitivity EVs; the November EVs. Flag any number in the results file that does not reproduce from the quoted JSON, and any rounding that changes a leg outcome.
+
+**Q3 — Bar application.** Is edge = False correct under BOTH scorings for all 8 policies? Walk each of the 8 bar legs (§3.7) for at least the strongest candidate (p2, the least negative at −0.2745) and the highest-trade policies (p4/p8, n = 346): which legs fail, and is any leg's False/True wrongly computed (e.g. leg 2 CI lower bound, leg 3 both-halves, leg 5 flat-0.40, leg 6 Holm)? Note the results file reports Holm adjusted p = 1.0000 for every policy — is that consistent with the one-sided p values in the JSON?
+
+**Q4 — November mixed cells.** November E2h shows p1 +0.2613 (15 trades), p3 +1.1069 (13 trades), p7 +0.3490 (49 trades), the rest negative. Do these threaten the NO EDGE conclusion? Assess (a) whether they are plausibly lottery noise on tiny n (one large hit could produce them), (b) whether the non-reversal guard (pooled Oct+Nov 95% CI lower bound < 0 for every policy) correctly disposes of them, and (c) whether November's tiny trade counts make the guard itself uninformative. Would any honest reading of November change the verdict?
+
+**Q5 — 55s zero-trade.** The 55s E2h pass returned None for every policy (elig = 0, n_oos_rows = 16,213). Is the None handling correct, and what does it imply? Rule on whether this is a real finding (no token satisfies the 55s feature window — i.e. the 55s variant is untradeable as specified) or a bug in the 55s feature construction. If it is a bug, say exactly what would prove it and whether it is BLOCKING.
+
+**Q6 — Power.** The strongest HGB policy (p1) traded 22 times, eff n 22, against the §3.7 leg-4 bar of n_eff ≥ 2,500. Is the negative-EV-null framing correctly applied — i.e. is it stated as a negative finding with tight CIs where the CIs are tight (flow policies, n = 308–346, CIs entirely below zero), and never as a "well-powered null"? Does the power shortfall force INCONCLUSIVE for any policy, or does leg 1 (EV/trade > 0) fail so decisively that NO EDGE stands regardless? Note p2/p3 CIs straddle 0 (upper +0.1423 / +0.2262) — does that matter?
+
+**Q7 — Floor unresolved.** The floor is UNRESOLVED and the bar was evaluated under both floored and unfloored scorings, failing under both. Does the verdict hold under both scorings, or does the unresolved floor block a NO EDGE call under §3.8's "exact feature/price coverage" requirement? If the Evaluation-tab / starter-notebook-2 evidence (owed pre-verdict, merge §5.6) could still change the call, say so explicitly and state what it would have to show.
+
+**Q8 — Run history.** Do the v1–v4 repairs change any frozen choice? Check: the mount-path fix (DATA now `/kaggle/input/competitions/<slug>/` with flat-path fallback), the label-dataset attachment (v2), and the one-line `flush` fix (v4, only CELL7 changed). Is there any evidence that a repair altered a feature definition, a label, a split, the frozen selection (tau* = 0.0, calibrators), or the bar? If the v4 notebook differs from v3 anywhere beyond the single kwarg, that is a defect — say how you checked.
+
+**Q9 — Results-file defects.** Is anything wrong with the results file itself: missing tables, inconsistent numbers between the table and the bar section, the self-test (§3.2) row, the coverage section (47,031 rows, p60 valid 47,031, degenerate 0), or the "No verdict is claimed in this file" status? Check in particular whether p4_flow_tp3 and p8_flow_multi having byte-identical numbers (same trades, EV, CI, halves) is by construction or a copy bug, and whether the p7/p8 multi-tp policies are defined consistently with §3.6.
+
+**Q10 — Final ruling.** Given Q1–Q9: what is the verdict (NO EDGE / INCONCLUSIVE / EDGE FOUND / SIGNAL FOUND, NOT SUBMITTABLE), what is the precise scope of the NO EDGE claim if that is your ruling (which candidates fail, what is NOT disproved), and what is your defect list with severities? End with READY or NOT READY.
+
+---
+
+## PART A — RESULTS FILE (verbatim)
+
+The following is the complete, unedited text of `kernel_sixtysec/outputs/SIXTY_SEC_RESULTS_2026-11-18.md` (8,993 bytes), copied character for character. Do not trust any paraphrase of it elsewhere in this brief; this copy is the source of truth.
+
+```
+# C109 First-60s Probe — Results (Kaggle kernel)
+Run: 2026-11-18 20:09 UTC. Kernel: rsaxena3011/c109-first-60s-audit-build.
+Audit PASS: True. Floor: UNRESOLVED — bar evaluated under BOTH floored and unfloored scorings.
+
+## Frozen selection (Discovery only)
+tau* = 0.0; calibrators = {'3': 'isotonic', '5': 'platt', '10': 'platt'}; flow thresholds = {'3': {'t14': 20, 't15': 1.0, 'tf': 0.5}, '5': {'t14': 20, 't15': 1.5, 'tf': 0.5}, '10': {'t14': 20, 't15': 1.5, 'tf': 0.5}}.
+Flow Discovery EV/trade: {'3': {'ev_hat': -0.552984399240216}, '5': {'ev_hat': -0.572941973082347}, '10': {'ev_hat': -0.6186636781756693}}.
+
+## Primary pass (E2h, Confirmation Oct 2–31) — per policy
+| policy | trades | EV/trade | 95% day-block CI | EV floored | CI floored | eff n | halves Oct2-16 / Oct17-31 | flat-0.40 | Holm adj p |
+|---|---|---|---|---|---|---|---|---|---|
+| p1_hgb_tp3 | 22 | -0.6842 | [-1.0755, -0.3212] | -0.4866 | [-0.8302, -0.1637] | 22.0000 | -0.8963 / -0.4722 | -0.7842 | 1.0000 |
+| p2_hgb_tp5 | 32 | -0.2745 | [-0.6253, 0.1423] | -0.1918 | [-0.5122, 0.2105] | 32.0000 | -0.3664 / 0.0540 | -0.3745 | 1.0000 |
+| p3_hgb_tp10 | 40 | -0.5467 | [-0.9884, 0.2262] | -0.3563 | [-0.7737, 0.3891] | 29.0026 | -0.9115 / 0.0614 | -0.6467 | 1.0000 |
+| p4_flow_tp3 | 346 | -0.6193 | [-0.7592, -0.4745] | -0.4504 | [-0.5771, -0.3178] | 224.5620 | -0.4988 / -0.7749 | -0.7193 | 1.0000 |
+| p5_flow_tp5 | 308 | -0.6360 | [-0.8145, -0.4427] | -0.4566 | [-0.6230, -0.2765] | 197.3193 | -0.5161 / -0.7896 | -0.7360 | 1.0000 |
+| p6_flow_tp10 | 308 | -0.7144 | [-0.8835, -0.5196] | -0.5278 | [-0.6853, -0.3488] | 254.5341 | -0.6737 / -0.7666 | -0.8144 | 1.0000 |
+| p7_hgb_multi | 83 | -0.5162 | [-0.8229, -0.0935] | -0.3578 | [-0.6431, 0.0435] | 57.1834 | -0.7027 / -0.2034 | -0.6162 | 1.0000 |
+| p8_flow_multi | 346 | -0.6193 | [-0.7592, -0.4745] | -0.4504 | [-0.5771, -0.3178] | 224.5620 | -0.4988 / -0.7749 | -0.7193 | 1.0000 |
+
+## Bar (§3.7) — per policy, both scorings
+- p1_hgb_tp3: unfloored edge=False {'1_ev_pos_and_ci_lower_pos': False, '2_both_halves_pos': False, '3_neff_ge_2500': False, '4_paired_pos': False, '5_flat040_pos': False, '6_holm_p_lt_05': False, '7_implementable': True, '8_guards': None}; floored edge=False {'1_ev_pos_and_ci_lower_pos': False, '2_both_halves_pos': False, '3_neff_ge_2500': False, '4_paired_pos': False, '5_flat040_pos': False, '6_holm_p_lt_05': False, '7_implementable': True, '8_guards': None}; guards={'november_trades': 15, 'november_ev': 0.26126007261604006, 'november_non_reversal': False, 'leave_one_day_out_ev': -0.7977673435850072, 'leave_one_day_out_pos': False, 'pooled_oct_nov_ci_lower': -0.7439487895730219}.
+- p2_hgb_tp5: unfloored edge=False {'1_ev_pos_and_ci_lower_pos': False, '2_both_halves_pos': False, '3_neff_ge_2500': False, '4_paired_pos': False, '5_flat040_pos': False, '6_holm_p_lt_05': False, '7_implementable': True, '8_guards': None}; floored edge=False {'1_ev_pos_and_ci_lower_pos': False, '2_both_halves_pos': False, '3_neff_ge_2500': False, '4_paired_pos': False, '5_flat040_pos': False, '6_holm_p_lt_05': False, '7_implementable': True, '8_guards': None}; guards={'november_trades': 30, 'november_ev': -0.08151467886471968, 'november_non_reversal': False, 'leave_one_day_out_ev': -0.40267465889615844, 'leave_one_day_out_pos': False, 'pooled_oct_nov_ci_lower': -0.42417351808501486}.
+- p3_hgb_tp10: unfloored edge=False {'1_ev_pos_and_ci_lower_pos': False, '2_both_halves_pos': False, '3_neff_ge_2500': False, '4_paired_pos': False, '5_flat040_pos': False, '6_holm_p_lt_05': False, '7_implementable': True, '8_guards': None}; floored edge=False {'1_ev_pos_and_ci_lower_pos': False, '2_both_halves_pos': False, '3_neff_ge_2500': False, '4_paired_pos': False, '5_flat040_pos': False, '6_holm_p_lt_05': False, '7_implementable': True, '8_guards': None}; guards={'november_trades': 13, 'november_ev': 1.1068601597296215, 'november_non_reversal': False, 'leave_one_day_out_ev': -0.8663008092773401, 'leave_one_day_out_pos': False, 'pooled_oct_nov_ci_lower': -0.7280776126284974}.
+- p4_flow_tp3: unfloored edge=False {'1_ev_pos_and_ci_lower_pos': False, '2_both_halves_pos': False, '3_neff_ge_2500': False, '4_paired_pos': False, '5_flat040_pos': False, '6_holm_p_lt_05': False, '7_implementable': True, '8_guards': None}; floored edge=False {'1_ev_pos_and_ci_lower_pos': False, '2_both_halves_pos': False, '3_neff_ge_2500': False, '4_paired_pos': False, '5_flat040_pos': False, '6_holm_p_lt_05': False, '7_implementable': True, '8_guards': None}; guards={'november_trades': 81, 'november_ev': -0.3200401850939121, 'november_non_reversal': False, 'leave_one_day_out_ev': -0.6460151536432229, 'leave_one_day_out_pos': False, 'pooled_oct_nov_ci_lower': -0.6845800399170269}.
+- p5_flow_tp5: unfloored edge=False {'1_ev_pos_and_ci_lower_pos': False, '2_both_halves_pos': False, '3_neff_ge_2500': False, '4_paired_pos': False, '5_flat040_pos': False, '6_holm_p_lt_05': False, '7_implementable': True, '8_guards': None}; floored edge=False {'1_ev_pos_and_ci_lower_pos': False, '2_both_halves_pos': False, '3_neff_ge_2500': False, '4_paired_pos': False, '5_flat040_pos': False, '6_holm_p_lt_05': False, '7_implementable': True, '8_guards': None}; guards={'november_trades': 75, 'november_ev': -0.30193690663091094, 'november_non_reversal': False, 'leave_one_day_out_ev': -0.6833102306349457, 'leave_one_day_out_pos': False, 'pooled_oct_nov_ci_lower': -0.7237988125355813}.
+- p6_flow_tp10: unfloored edge=False {'1_ev_pos_and_ci_lower_pos': False, '2_both_halves_pos': False, '3_neff_ge_2500': False, '4_paired_pos': False, '5_flat040_pos': False, '6_holm_p_lt_05': False, '7_implementable': True, '8_guards': None}; floored edge=False {'1_ev_pos_and_ci_lower_pos': False, '2_both_halves_pos': False, '3_neff_ge_2500': False, '4_paired_pos': False, '5_flat040_pos': False, '6_holm_p_lt_05': False, '7_implementable': True, '8_guards': None}; guards={'november_trades': 75, 'november_ev': -0.2831383253401537, 'november_non_reversal': False, 'leave_one_day_out_ev': -0.7704478888983793, 'leave_one_day_out_pos': False, 'pooled_oct_nov_ci_lower': -0.7860557933191551}.
+- p7_hgb_multi: unfloored edge=False {'1_ev_pos_and_ci_lower_pos': False, '2_both_halves_pos': False, '3_neff_ge_2500': False, '4_paired_pos': False, '5_flat040_pos': False, '6_holm_p_lt_05': False, '7_implementable': True, '8_guards': None}; floored edge=False {'1_ev_pos_and_ci_lower_pos': False, '2_both_halves_pos': False, '3_neff_ge_2500': False, '4_paired_pos': False, '5_flat040_pos': False, '6_holm_p_lt_05': False, '7_implementable': True, '8_guards': None}; guards={'november_trades': 49, 'november_ev': 0.34903474595086637, 'november_non_reversal': False, 'leave_one_day_out_ev': -0.6827756731343698, 'leave_one_day_out_pos': False, 'pooled_oct_nov_ci_lower': -0.5004815980728807}.
+- p8_flow_multi: unfloored edge=False {'1_ev_pos_and_ci_lower_pos': False, '2_both_halves_pos': False, '3_neff_ge_2500': False, '4_paired_pos': False, '5_flat040_pos': False, '6_holm_p_lt_05': False, '7_implementable': True, '8_guards': None}; floored edge=False {'1_ev_pos_and_ci_lower_pos': False, '2_both_halves_pos': False, '3_neff_ge_2500': False, '4_paired_pos': False, '5_flat040_pos': False, '6_holm_p_lt_05': False, '7_implementable': True, '8_guards': None}; guards={'november_trades': 81, 'november_ev': -0.3200401850939121, 'november_non_reversal': False, 'leave_one_day_out_ev': -0.6460151536432229, 'leave_one_day_out_pos': False, 'pooled_oct_nov_ci_lower': -0.6845800399170269}.
+
+## Guards and sensitivities
+- E1h_sensitivity: n_oos_rows=16213, EV/trade by policy={'p1_hgb_tp3': -0.49029060477611947, 'p2_hgb_tp5': -0.6166092861465633, 'p3_hgb_tp10': -0.5480279829375871, 'p4_flow_tp3': -0.6193364130351351, 'p5_flow_tp5': -0.6359791419874249, 'p6_flow_tp10': -0.7144054078179137, 'p7_hgb_multi': -0.5490705015833205, 'p8_flow_multi': -0.6193364130351351}.
+- November_E2h: n_oos_rows=5980, EV/trade by policy={'p1_hgb_tp3': 0.26126007261604006, 'p2_hgb_tp5': -0.08151467886471968, 'p3_hgb_tp10': 1.1068601597296215, 'p4_flow_tp3': -0.3200401850939121, 'p5_flow_tp5': -0.30193690663091094, 'p6_flow_tp10': -0.2831383253401537, 'p7_hgb_multi': 0.34903474595086637, 'p8_flow_multi': -0.3200401850939121}.
+- 55s_E2h: n_oos_rows=16213, EV/trade by policy={'p1_hgb_tp3': None, 'p2_hgb_tp5': None, 'p3_hgb_tp10': None, 'p4_flow_tp3': None, 'p5_flow_tp5': None, 'p6_flow_tp10': None, 'p7_hgb_multi': None, 'p8_flow_multi': None}.
+Self-test (prediction side, §3.2): {'status': 'PASS', 'day': '2026-10-02', 'mint': '2mTAy2ovMFtfgNBPqJ9yMsiujFdwH71xS3xAUEq5pump', 'ev_hat_by_tp': {'3': -0.12129826571506874, '5': -0.23250903487934516, '10': 0.4771777583719627}, 'recorded_EV_hat_best': 0.4771777583719627}.
+
+## Coverage (feat60)
+Rows: 47031; eligible: 47031; labelled eligible: 47031; p60 valid: 47031; degenerate p60: 0.
+## Verdict status
+No verdict is claimed in this file. The verdict file is written after the §12 kernel audit passes AND two hostile review rounds pass.
+```
+
+---
+
+## PART B — KERNEL AUDIT FILE (verbatim)
+
+The following is the complete, unedited text of `kernel_sixtysec/outputs/SIXTY_SEC_KERNEL_AUDIT_2026-11-18.md` (4,012 bytes), copied character for character. This is the §12 kernel audit that gates the build; check it against the merge §4 acceptance checklist in Q1.
+
+```
+# C109 First-60s Probe — §12 Kernel Audit (Kaggle)
+
+Kernel: rsaxena3011/c109-first-60s-audit-build. Run: 2026-11-18 20:02 UTC.
+**AUDIT_PASS = True** (gating items 1, 2, 3, 5, 6; items 4 and 7 report-only).
+
+## Item 1_file_inventory: PASS
+
+```json
+{
+  "n_pumpswap_files": 89,
+  "n_pumpfun_files": 89,
+  "pumpswap_schema_fingerprints": [
+    "25b435a9ada6e190"
+  ],
+  "pumpfun_schema_fingerprints": [
+    "b273c4e36c7c197b"
+  ],
+  "pumpswap_n_cols": 56,
+  "pumpswap_max_ts_rel_overall": 60.0,
+  "pumpswap_files_max_tsrel_gt60": 0,
+  "pumpfun_max_ts_rel_overall": 60.0,
+  "pumpswap_rows_read": 22435025,
+  "pumpfun_rows_read": 59214971,
+  "pumpswap_dup_removed": 0,
+  "pumpfun_dup_removed": 4,
+  "quote_token_unique": [
+    "So11111111111111111111111111111111111111112"
+  ]
+}
+```
+
+## Item 2_test_join_november: PASS
+
+```json
+{
+  "n_test_mints": 409,
+  "test_valid_snapshot_cov_nrows_ge1": 1.0,
+  "test_p60_valid_cov": 1.0,
+  "test_mints_max_tsrel_gt60": 0,
+  "november_labelled_mints": 5980,
+  "november_cov_by_day": {
+    "2026-11-01": 1.0,
+    "2026-11-02": 1.0,
+    "2026-11-03": 1.0,
+    "2026-11-04": 1.0,
+    "2026-11-05": 1.0,
+    "2026-11-06": 1.0,
+    "2026-11-07": 1.0,
+    "2026-11-08": 1.0,
+    "2026-11-09": 1.0,
+    "2026-11-10": 1.0,
+    "2026-11-11": 1.0,
+    "2026-11-12": 1.0,
+    "2026-11-13": 1.0,
+    "2026-11-14": 1.0,
+    "2026-11-15": 1.0,
+    "2026-11-16": 1.0
+  },
+  "november_cov_min": 1.0
+}
+```
+
+## Item 3_branchA_scale: PASS
+
+```json
+{
+  "n_labelled": 47031,
+  "n_n1_ge10": 47030,
+  "n_n1_ge100": 44511,
+  "frac_mi_gt1_n1_ge10": 0.44760790984477994,
+  "frac_mi_gt1_n1_ge100": 0.45923479589315,
+  "thin_window_share_1_le_n1_lt10": 2.1262571495396654e-05,
+  "no_amm_share_n1_eq0": 0.0,
+  "contra_frac_maxx_ge_m060_over_pmt": 0.40654036699198404,
+  "m_i_quantiles": {
+    "p0": -0.01694915254237288,
+    "p5": -0.01694915254237288,
+    "p25": -0.01694915254237288,
+    "p50": 0.44976664210267747,
+    "p75": 1.6725682824139048,
+    "p95": 1.6779661016949152,
+    "p100": 1.6779661016949152
+  },
+  "implied_hour_trades_100a_quantiles": {
+    "p0": 0.0,
+    "p5": 0.0,
+    "p25": 0.0,
+    "p50": 8000.0,
+    "p75": 34300.0,
+    "p95": 84300.0,
+    "p100": 1120800.0
+  },
+  "sample_reference_m_i": [
+    1.6701,
+    1.6754,
+    1.6757,
+    1.6645
+  ],
+  "sample_reference_frac": 0.6666666666666666,
+  "limiting_99_over_59": 1.6779661016949152
+}
+```
+
+## Item 4_pmt_availability: REPORT-ONLY
+
+```json
+{
+  "pmt_measurable_rate_labelled": 0.679764410707831,
+  "pmt_measurable_rate_by_split": {
+    "confirmation": 0.7101091716523777,
+    "discovery": 0.6247684998792173,
+    "november": 0.8259197324414715
+  },
+  "pmt_multi_file_mints": 0
+}
+```
+
+## Item 5_timing: PASS
+
+```json
+{
+  "pumpswap_scan_s": 1015.8,
+  "pumpfun_scan_s": 396.7,
+  "hgb_pilot_fit_s_mean": 0.19,
+  "n_fits_projected": 174,
+  "ml_projected_kaggle_s": 40.5,
+  "projected_total_kaggle_s": 1633.0,
+  "projected_dedicated_s": 435.5,
+  "bar_dedicated_s": 1800.0,
+  "conversion_kaggle_to_dedicated": 3.75,
+  "peak_rss_gb": 4.66
+}
+```
+
+## Item 6_p60_coverage_universe: PASS
+
+```json
+{
+  "p60_cov_by_split": {
+    "discovery": 1.0,
+    "confirmation": 1.0,
+    "november": 1.0
+  },
+  "nrows_ge1_cov_by_split": {
+    "discovery": 1.0,
+    "confirmation": 1.0,
+    "november": 1.0
+  },
+  "conf_minus_disc_p60_pp": 0.0,
+  "conf_minus_disc_n1_pp": 0.0,
+  "n_rows_incl0_quantiles_labelled": {
+    "p0": 5.0,
+    "p5": 98.0,
+    "p25": 205.0,
+    "p50": 377.0,
+    "p75": 611.0,
+    "p95": 1139.0,
+    "p100": 11212.0
+  },
+  "universe_ge100_rate_by_split": {
+    "discovery": 1.0,
+    "confirmation": 1.0,
+    "november": 1.0
+  },
+  "universe_ge100_rate_overall": 1.0,
+  "n_trades_universe_quantiles": {
+    "p0": 100.0,
+    "p5": 123.0,
+    "p25": 300.0,
+    "p50": 633.0,
+    "p75": 1665.0,
+    "p95": 3481.0,
+    "p100": 76177.0
+  }
+}
+```
+
+## Item 7_p60_file_vs_ts_order: REPORT-ONLY
+
+```json
+{
+  "n_compared": 47031,
+  "frac_file_ne_ts_order": 0.0,
+  "n_diff": 0
+}
+```
+
+## Gate
+
+All gating items PASS. The build (CELL 5+) proceeds.
+```
+
+---
+
+*End of brief. Reviewer: verdict block first, then Q1–Q10, then the defect list with severities, then READY / NOT READY. Do not write a verdict file — that is a separate step after both review rounds.*
