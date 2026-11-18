@@ -1,0 +1,1226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>ShipCheck demo</title>
+<style>
+/* Panel CSS, inlined VERBATIM from static/shipcheck-panel/styles.css */
+/* ShipCheck panel — one visual language: verdict colour carries the state,
+   receipts carry the evidence. No framework, no images. */
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 14px;
+  line-height: 1.45;
+  color: #172b4d;
+  background: #fff;
+  padding: 12px 16px;
+}
+.hidden { display: none; }
+.state { color: #5e6c84; padding: 12px 0; }
+#error { color: #bf2600; }
+header { display: flex; align-items: baseline; gap: 10px; margin-bottom: 4px; }
+h1 { font-size: 16px; margin: 0; }
+h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .04em; color: #5e6c84; margin: 18px 0 4px; }
+.issue-key { color: #5e6c84; font-size: 13px; }
+.issue-summary { color: #5e6c84; font-size: 13px; margin: 0 0 4px; }
+.hint { color: #5e6c84; font-size: 12px; margin: 0 0 8px; }
+.verdict { border: 1px solid #dfe1e6; border-radius: 6px; padding: 12px; margin: 8px 0; }
+.verdict-badge {
+  display: inline-block;
+  font-weight: 700;
+  font-size: 15px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  color: #fff;
+  background: #5e6c84;
+}
+.verdict-badge.ready { background: #00875a; }
+.verdict-badge.at-risk { background: #ff8b00; }
+.verdict-badge.blocked { background: #de350b; }
+.verdict-badge.insufficient { background: #5e6c84; }
+.verdict-summary { margin: 8px 0 2px; font-weight: 600; }
+.verdict-count { margin: 0; color: #5e6c84; font-size: 12px; }
+.receipts { list-style: none; margin: 0; padding: 0; }
+.receipt { border: 1px solid #dfe1e6; border-left-width: 4px; border-radius: 4px; padding: 8px 10px; margin-bottom: 8px; }
+.receipt.pass { border-left-color: #00875a; }
+.receipt.fail { border-left-color: #de350b; }
+.receipt.unknown { border-left-color: #5e6c84; }
+.receipt-head { display: flex; gap: 8px; align-items: center; font-weight: 600; }
+.receipt-icon { font-weight: 700; }
+.receipt.pass .receipt-icon { color: #00875a; }
+.receipt.fail .receipt-icon { color: #de350b; }
+.receipt.unknown .receipt-icon { color: #5e6c84; }
+.receipt-evidence { margin: 4px 0; }
+.receipt-detail { margin: 0; color: #5e6c84; font-size: 12px; }
+.whatif-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; }
+.whatif-item { display: flex; gap: 8px; align-items: baseline; cursor: pointer; }
+button {
+  background: #0052cc;
+  color: #fff;
+  border: 0;
+  border-radius: 4px;
+  padding: 7px 14px;
+  font-size: 14px;
+  cursor: pointer;
+}
+button:hover { background: #0065ff; }
+.rehearsal { border: 1px dashed #5e6c84; border-radius: 6px; padding: 10px; margin-top: 10px; }
+.rehearsal p { margin: 8px 0 0; }
+footer { margin-top: 18px; padding-top: 10px; border-top: 1px solid #dfe1e6; color: #5e6c84; font-size: 12px; }
+</style>
+<style>
+/* Demo harness CSS. Every selector is scoped under #demo-harness or
+   #demo-harness-bottom so no harness rule can restyle the panel, and the
+   harness uses no h1/h2/header/footer elements so no panel rule restyles it. */
+#demo-harness, #demo-harness-bottom { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 14px; line-height: 1.45; color: #f8fafc; }
+#demo-harness { background: #1e293b; border-radius: 6px; padding: 12px; margin-bottom: 10px; }
+#demo-harness .demo-harness-pill { display: inline-block; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; font-weight: 700; letter-spacing: .04em; background: #f59e0b; color: #1e293b; border-radius: 4px; padding: 4px 8px; }
+#demo-harness .demo-harness-meta { color: #cbd5e1; font-size: 12px; margin: 8px 0 0; }
+#demo-harness .demo-harness-selftest { margin: 8px 0 0; font-size: 12px; }
+#demo-harness .demo-harness-selftest .demo-harness-badge { display: inline-block; font-weight: 700; background: #00875a; color: #fff; border-radius: 4px; padding: 3px 8px; }
+#demo-harness .demo-harness-selftest .demo-harness-badge.demo-harness-fail { background: #de350b; }
+#demo-harness .demo-harness-picker-label { display: block; font-size: 12px; font-weight: 700; color: #f8fafc; margin: 12px 0 4px; }
+#demo-harness .demo-harness-picker-row { display: flex; gap: 6px; }
+#demo-harness select.demo-harness-select { flex: 1; min-width: 0; height: 48px; font-size: 14px; border: 2px solid #f59e0b; border-radius: 4px; background: #fff; color: #172b4d; padding: 0 8px; }
+#demo-harness button.demo-harness-btn { min-height: 44px; min-width: 44px; background: #334155; color: #f8fafc; border: 1px solid #64748b; border-radius: 4px; padding: 7px 12px; font-size: 14px; cursor: pointer; }
+#demo-harness button.demo-harness-btn:hover { background: #475569; }
+#demo-harness .demo-harness-proof { color: #cbd5e1; font-size: 12px; margin: 6px 0 0; }
+#demo-harness .demo-harness-proof.demo-harness-amber { color: #fbbf24; font-weight: 700; }
+#demo-harness .demo-harness-toggle { display: flex; gap: 8px; align-items: center; min-height: 44px; cursor: pointer; font-size: 13px; color: #f8fafc; margin-top: 6px; }
+#demo-harness .demo-harness-toggle input { width: 20px; height: 20px; }
+#demo-harness button.demo-harness-jump { display: block; width: 100%; min-height: 44px; background: #f59e0b; color: #1e293b; border: 0; border-radius: 4px; padding: 10px 12px; font-size: 14px; font-weight: 700; cursor: pointer; margin-top: 10px; text-align: left; }
+#demo-harness .demo-harness-divider { text-align: center; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11px; letter-spacing: .04em; color: #94a3b8; margin: 12px 0 0; }
+#demo-harness-bottom { background: #1e293b; border-radius: 6px; padding: 12px; margin-top: 10px; }
+#demo-harness-bottom button.demo-harness-btn { min-height: 44px; background: #334155; color: #f8fafc; border: 1px solid #64748b; border-radius: 4px; padding: 7px 12px; font-size: 14px; cursor: pointer; }
+#demo-harness-bottom button.demo-harness-btn:hover { background: #475569; }
+#demo-harness-bottom pre.demo-harness-inspector { background: #0f172a; color: #e2e8f0; font-size: 11px; line-height: 1.4; padding: 10px; border-radius: 4px; overflow-x: auto; white-space: pre; margin: 10px 0 0; max-height: 320px; overflow-y: auto; }
+/* Demo-only touch adaptation (recorded in MERGE_demo_2026-11-18.md): the
+   shipped panel buttons are ~34px tall; the demo raises interactive
+   targets to 44px minimum for phone taps. Panel padding/colours unchanged. */
+#shipcheck-panel-mount button { min-height: 44px; }
+#shipcheck-panel-mount .whatif-item { min-height: 44px; align-items: center; }
+#shipcheck-panel-mount .whatif-item input[type="checkbox"] { width: 20px; height: 20px; flex-shrink: 0; }
+/* Transient highlight ring when the jump strip scrolls to What-if. */
+#shipcheck-panel-mount .demo-harness-highlight { outline: 3px solid #f59e0b; outline-offset: 2px; border-radius: 6px; }
+</style>
+</head>
+<body>
+<div id="demo-harness">
+  <span class="demo-harness-pill">DEMO HARNESS : OFFLINE PHONE PREVIEW</span>
+  <p class="demo-harness-meta">No Jira or Forge connection. Using embedded fixtures + real engine.js. Reference clock frozen at 2026-11-18T09:00:00Z.</p>
+  <p class="demo-harness-selftest"><span id="demo-harness-selftest" class="demo-harness-badge">Self-test: running...</span></p>
+  <label class="demo-harness-picker-label" for="demo-harness-select">DEMO ONLY: Choose a sample ticket.</label>
+  <div class="demo-harness-picker-row">
+    <button id="demo-harness-prev" class="demo-harness-btn" type="button" aria-label="Previous ticket">Prev</button>
+    <select id="demo-harness-select" class="demo-harness-select"></select>
+    <button id="demo-harness-next" class="demo-harness-btn" type="button" aria-label="Next ticket">Next</button>
+  </div>
+  <p id="demo-harness-proof" class="demo-harness-proof"></p>
+  <label class="demo-harness-toggle"><input id="demo-harness-sources" type="checkbox" /> Show receipt source traces</label>
+  <button id="demo-harness-jump" class="demo-harness-jump" type="button" hidden></button>
+  <p class="demo-harness-divider">&#9660; SIMULATED JIRA ISSUE PANEL (SHIPPED UI) &#9660;</p>
+</div>
+<div id="shipcheck-panel-mount">
+  <div id="app">
+    <div id="loading" class="state">Checking readiness…</div>
+    <div id="error" class="state hidden"></div>
+    <div id="panel" class="hidden">
+      <header>
+        <h1 id="app-name">ShipCheck</h1>
+        <span id="issue-key" class="issue-key"></span>
+      </header>
+      <p id="issue-summary" class="issue-summary"></p>
+      <section id="verdict" class="verdict">
+        <div id="verdict-badge" class="verdict-badge"></div>
+        <p id="verdict-summary" class="verdict-summary"></p>
+        <p id="verdict-count" class="verdict-count"></p>
+        <button id="recheck-btn" type="button">Re-check</button>
+      </section>
+      <section>
+        <h2>Receipts</h2>
+        <p class="hint">Every check names its evidence, its source, and what to do next.</p>
+        <ul id="receipts" class="receipts"></ul>
+      </section>
+      <section id="whatif-section" class="hidden">
+        <h2>What-if rehearsal</h2>
+        <p class="hint">Read-only. Pick blockers and rehearse resolving them: the real verdict never changes.</p>
+        <div id="whatif-list" class="whatif-list"></div>
+        <button id="rehearse-btn" type="button">Rehearse</button>
+        <div id="rehearsal" class="rehearsal hidden"></div>
+      </section>
+      <footer id="panel-footer"></footer>
+    </div>
+  </div>
+</div>
+<div id="demo-harness-bottom">
+  <button id="demo-harness-inspector-toggle" class="demo-harness-btn" type="button">Inspect raw fixture JSON and receipt sources</button>
+  <pre id="demo-harness-inspector" class="demo-harness-inspector" hidden></pre>
+</div>
+<script>var module = { exports: {} };</script>
+<script>
+// ShipCheck verdict engine, embedded VERBATIM from shipcheck/src/engine.js.
+// No line edited. The one-line shim above gives it a module object.
+// ShipCheck verdict engine — PURE deterministic rules. No Forge imports.
+// The verdict is computed only from live Jira fields. Unknown is never a pass.
+//
+// Input: a raw Jira issue JSON as returned by GET /rest/api/3/issue/{key}
+//   with fields=summary,status,assignee,duedate,updated,subtasks,issuelinks.
+// Options: { resolveKeys: string[] } — what-if rehearsal: blocker keys
+//   treated as resolved. Same rules, same code path, one flag changed.
+//
+// Output: { verdict, summary, receipts[], checksPassed, checksTotal,
+//           openBlockers[], incompleteSubtasks[] }
+//   verdict: READY | AT RISK | BLOCKED | INSUFFICIENT EVIDENCE
+//   receipt: { id, check, result: 'pass'|'fail'|'unknown', severity:
+//              'blocker'|'risk'|'info', evidence, reason, source, nextStep }
+
+const STALE_DAYS = 30;
+
+function isDone(status) {
+  return Boolean(status && status.statusCategory && status.statusCategory.key === 'done');
+}
+
+function statusName(status) {
+  return (status && status.name) || 'Unknown';
+}
+
+// A blocker of THIS issue is a linked issue that blocks it: an inward link
+// on the "Blocks" link type ("is blocked by"), or any link whose inward
+// description says "is blocked by". Outward "blocks" links point the other
+// way (this issue blocks someone else) and are not our blockers.
+function extractBlockers(issue) {
+  const links = (issue.fields && issue.fields.issuelinks) || [];
+  const blockers = [];
+  const seen = new Set();
+  for (const link of links) {
+    const linked = link.inwardIssue;
+    if (!linked) continue;
+    const typeName = (link.type && link.type.name) || '';
+    const inward = (link.type && link.type.inward) || '';
+    const blocksUs = typeName === 'Blocks' || inward === 'is blocked by';
+    if (!blocksUs) continue;
+    if (seen.has(linked.key)) continue;
+    seen.add(linked.key);
+    blockers.push({
+      key: linked.key,
+      summary: (linked.fields && linked.fields.summary) || '',
+      status: (linked.fields && linked.fields.status) || null,
+    });
+  }
+  return blockers;
+}
+
+function extractSubtasks(issue) {
+  const subs = (issue.fields && issue.fields.subtasks) || [];
+  return subs.map((s) => ({
+    key: s.key,
+    summary: (s.fields && s.fields.summary) || '',
+    status: (s.fields && s.fields.status) || null,
+  }));
+}
+
+function daysSince(isoDate, now) {
+  if (!isoDate) return null;
+  const ms = now - new Date(isoDate).getTime();
+  if (Number.isNaN(ms)) return null;
+  return Math.floor(ms / (1000 * 60 * 60 * 24));
+}
+
+// A due date means "due by end of that day", not "due at midnight when the
+// day starts" — an issue due today is not overdue at 09:00.
+function dueDateEndsBeforeNow(dueDate, now) {
+  const end = new Date(dueDate + 'T23:59:59.999Z').getTime();
+  if (Number.isNaN(end)) return false;
+  return end < now.getTime();
+}
+
+function evaluateIssue(issue, options = {}) {
+  const now = options.now ? new Date(options.now) : new Date();
+  const resolveKeys = new Set(options.resolveKeys || []);
+  const receipts = [];
+  const fields = (issue && issue.fields) || null;
+
+  // --- Evidence completeness: if the issue body itself is missing, we know
+  // nothing. Unknown is never a pass.
+  if (!fields) {
+    receipts.push({
+      id: 'evidence-complete',
+      check: 'Evidence complete',
+      result: 'unknown',
+      severity: 'risk',
+      evidence: 'No issue data returned from Jira.',
+      reason: 'ShipCheck could not read the issue, so no readiness claim can be made.',
+      source: { type: 'issue', key: (issue && issue.key) || 'unknown' },
+      nextStep: 'Re-open the issue and retry. If it persists, check app permissions.',
+    });
+    return finish('INSUFFICIENT EVIDENCE', receipts);
+  }
+
+  const issueStatus = fields.status || null;
+  const done = isDone(issueStatus);
+  const blockers = extractBlockers(issue);
+  const openBlockers = blockers.filter(
+    (b) => !isDone(b.status) && !resolveKeys.has(b.key),
+  );
+  const resolvedByRehearsal = blockers.filter(
+    (b) => !isDone(b.status) && resolveKeys.has(b.key),
+  );
+  const subtasks = extractSubtasks(issue);
+  const incompleteSubtasks = subtasks.filter((s) => !isDone(s.status));
+  const assignee = fields.assignee || null;
+  const dueDate = fields.duedate || null;
+  const updatedDays = daysSince(fields.updated, now);
+
+  // Evidence shape check: subtasks / links must be present as arrays. If the
+  // API shape changes and they come back undefined, say so instead of
+  // treating absence as "none".
+  const linksPresent = Array.isArray(fields.issuelinks);
+  const subtasksPresent = Array.isArray(fields.subtasks);
+  const evidenceComplete = linksPresent && subtasksPresent;
+
+  // --- Rule 1: open blockers (severity: blocker)
+  // If Jira did not return links at all, this check is unknown — absence of
+  // data is not evidence of absence.
+  if (!linksPresent) {
+    receipts.push({
+      id: 'open-blockers',
+      check: 'Open blockers',
+      result: 'unknown',
+      severity: 'blocker',
+      evidence: 'Linked issues were not returned by Jira.',
+      reason: 'Blockers cannot be checked without the link data.',
+      source: { type: 'issue', key: issue.key },
+      nextStep: 'Retry the check. If it persists, check app permissions.',
+    });
+  } else if (openBlockers.length > 0) {
+    receipts.push({
+      id: 'open-blockers',
+      check: 'Open blockers',
+      result: 'fail',
+      severity: 'blocker',
+      evidence: `${openBlockers.length} open blocker${openBlockers.length === 1 ? '' : 's'}: ` +
+        openBlockers.map((b) => `${b.key} (${statusName(b.status)})`).join(', '),
+      reason: 'The issue cannot ship while work it depends on is unfinished.',
+      source: { type: 'link', key: openBlockers[0].key, summary: openBlockers[0].summary },
+      nextStep: `Resolve or unblock ${openBlockers.map((b) => b.key).join(', ')} first.`,
+    });
+  } else {
+    receipts.push({
+      id: 'open-blockers',
+      check: 'Open blockers',
+      result: 'pass',
+      severity: 'blocker',
+      evidence: resolvedByRehearsal.length > 0
+        ? `No open blockers (rehearsal treats ${resolvedByRehearsal.map((b) => b.key).join(', ')} as resolved).`
+        : 'No open blockers.',
+      reason: 'Nothing linked as blocking this issue is unfinished.',
+      source: { type: 'issue', key: issue.key },
+      nextStep: 'None.',
+    });
+  }
+
+  // --- Rule 2: subtasks complete
+  if (!subtasksPresent) {
+    receipts.push({
+      id: 'subtasks-complete',
+      check: 'Subtasks complete',
+      result: 'unknown',
+      severity: 'risk',
+      evidence: 'Subtasks were not returned by Jira.',
+      reason: 'Sub-work cannot be checked without the subtask data.',
+      source: { type: 'issue', key: issue.key },
+      nextStep: 'Retry the check. If it persists, check app permissions.',
+    });
+  } else if (incompleteSubtasks.length > 0) {
+    receipts.push({
+      id: 'subtasks-complete',
+      check: 'Subtasks complete',
+      result: 'fail',
+      severity: 'risk',
+      evidence: `${incompleteSubtasks.length} of ${subtasks.length} subtask${subtasks.length === 1 ? '' : 's'} unfinished: ` +
+        incompleteSubtasks.map((s) => `${s.key} (${statusName(s.status)})`).join(', '),
+      reason: 'Unfinished subtasks mean part of the work is still open.',
+      source: { type: 'subtask', key: incompleteSubtasks[0].key, summary: incompleteSubtasks[0].summary },
+      nextStep: `Finish ${incompleteSubtasks.map((s) => s.key).join(', ')} or move them out of this issue.`,
+    });
+  } else {
+    receipts.push({
+      id: 'subtasks-complete',
+      check: 'Subtasks complete',
+      result: 'pass',
+      severity: 'risk',
+      evidence: subtasks.length === 0
+        ? 'No subtasks.'
+        : `All ${subtasks.length} subtask${subtasks.length === 1 ? '' : 's'} done.`,
+      reason: 'No unfinished sub-work remains.',
+      source: { type: 'issue', key: issue.key },
+      nextStep: 'None.',
+    });
+  }
+
+  // --- Rule 3: assignee set
+  if (!assignee) {
+    receipts.push({
+      id: 'assignee-set',
+      check: 'Owner assigned',
+      result: 'fail',
+      severity: 'risk',
+      evidence: 'No assignee.',
+      reason: 'Unowned work has no one to confirm it is shippable.',
+      source: { type: 'field', key: issue.key, field: 'assignee' },
+      nextStep: 'Assign an owner.',
+    });
+  } else {
+    receipts.push({
+      id: 'assignee-set',
+      check: 'Owner assigned',
+      result: 'pass',
+      severity: 'risk',
+      evidence: `Assigned to ${assignee.displayName || assignee.name || assignee.accountId}.`,
+      reason: 'Someone owns the ship decision.',
+      source: { type: 'field', key: issue.key, field: 'assignee' },
+      nextStep: 'None.',
+    });
+  }
+
+  // --- Rule 4: due date
+  if (!dueDate) {
+    receipts.push({
+      id: 'due-date',
+      check: 'Due date set',
+      result: 'fail',
+      severity: 'risk',
+      evidence: 'No due date.',
+      reason: 'No due date means no committed ship window to check against.',
+      source: { type: 'field', key: issue.key, field: 'duedate' },
+      nextStep: 'Set a due date.',
+    });
+  } else if (!done && dueDateEndsBeforeNow(dueDate, now)) {
+    receipts.push({
+      id: 'due-date',
+      check: 'Due date set',
+      result: 'fail',
+      severity: 'risk',
+      evidence: `Due ${dueDate} — overdue and not done.`,
+      reason: 'The committed date passed with the issue still open.',
+      source: { type: 'field', key: issue.key, field: 'duedate' },
+      nextStep: 'Re-plan the date or close the remaining work.',
+    });
+  } else {
+    receipts.push({
+      id: 'due-date',
+      check: 'Due date set',
+      result: 'pass',
+      severity: 'risk',
+      evidence: `Due ${dueDate}.`,
+      reason: 'A committed date exists and has not passed.',
+      source: { type: 'field', key: issue.key, field: 'duedate' },
+      nextStep: 'None.',
+    });
+  }
+
+  // --- Rule 5: freshness (stale evidence)
+  // A missing updated date is unknown, not fresh — unknown is never a pass.
+  if (updatedDays === null) {
+    receipts.push({
+      id: 'freshness',
+      check: 'Recently updated',
+      result: 'unknown',
+      severity: 'risk',
+      evidence: 'Updated date unavailable.',
+      reason: 'Freshness cannot be checked without the updated date.',
+      source: { type: 'field', key: issue.key, field: 'updated' },
+      nextStep: 'Retry the check. If it persists, check app permissions.',
+    });
+  } else if (!done && updatedDays > STALE_DAYS) {
+    receipts.push({
+      id: 'freshness',
+      check: 'Recently updated',
+      result: 'fail',
+      severity: 'risk',
+      evidence: `Last updated ${updatedDays} days ago.`,
+      reason: 'Stale issues carry stale evidence — status may no longer reflect reality.',
+      source: { type: 'field', key: issue.key, field: 'updated' },
+      nextStep: 'Confirm the issue state with the owner.',
+    });
+  } else {
+    receipts.push({
+      id: 'freshness',
+      check: 'Recently updated',
+      result: 'pass',
+      severity: 'risk',
+      evidence: `Last updated ${updatedDays} day${updatedDays === 1 ? '' : 's'} ago.`,
+      reason: 'The issue state is fresh enough to trust.',
+      source: { type: 'field', key: issue.key, field: 'updated' },
+      nextStep: 'None.',
+    });
+  }
+
+  // --- Rule 6: evidence completeness
+  if (!evidenceComplete) {
+    receipts.push({
+      id: 'evidence-complete',
+      check: 'Evidence complete',
+      result: 'unknown',
+      severity: 'risk',
+      evidence: `Jira did not return ${[
+        !linksPresent ? 'linked issues' : null,
+        !subtasksPresent ? 'subtasks' : null,
+      ].filter(Boolean).join(' and ')}.`,
+      reason: 'Missing evidence cannot be treated as passing evidence.',
+      source: { type: 'issue', key: issue.key },
+      nextStep: 'Retry the check. If it persists, check app permissions.',
+    });
+  } else {
+    receipts.push({
+      id: 'evidence-complete',
+      check: 'Evidence complete',
+      result: 'pass',
+      severity: 'info',
+      evidence: 'Linked issues and subtasks were read.',
+      reason: 'Every check ran against live data.',
+      source: { type: 'issue', key: issue.key },
+      nextStep: 'None.',
+    });
+  }
+
+  // --- Reduction: BLOCKED > INSUFFICIENT EVIDENCE > AT RISK > READY.
+  // Done-with-open-blockers is inconsistent: it can never be READY, but the
+  // blocker rule already forces BLOCKED, so no special case is needed.
+  let verdict;
+  if (receipts.some((r) => r.severity === 'blocker' && r.result === 'fail')) {
+    verdict = 'BLOCKED';
+  } else if (receipts.some((r) => r.result === 'unknown')) {
+    verdict = 'INSUFFICIENT EVIDENCE';
+  } else if (receipts.some((r) => r.severity === 'risk' && r.result === 'fail')) {
+    verdict = 'AT RISK';
+  } else {
+    verdict = 'READY';
+  }
+
+  return finish(verdict, receipts, { openBlockers, incompleteSubtasks });
+}
+
+function finish(verdict, receipts, extra = {}) {
+  const checksPassed = receipts.filter((r) => r.result === 'pass').length;
+  const failing = receipts.filter((r) => r.result === 'fail');
+  let summary;
+  if (verdict === 'READY') {
+    summary = `READY — all ${receipts.length} checks passed.`;
+  } else if (verdict === 'BLOCKED') {
+    const b = failing.find((r) => r.severity === 'blocker');
+    summary = `BLOCKED — ${b ? b.evidence : 'a blocking check failed.'}`;
+  } else if (verdict === 'INSUFFICIENT EVIDENCE') {
+    summary = 'INSUFFICIENT EVIDENCE — ShipCheck could not read enough to judge. Unknown is never a pass.';
+  } else {
+    summary = `AT RISK — ${failing.length} check${failing.length === 1 ? '' : 's'} failing: ` +
+      failing.map((r) => r.check.toLowerCase()).join(', ') + '.';
+  }
+  return {
+    verdict,
+    summary,
+    receipts,
+    checksPassed,
+    checksTotal: receipts.length,
+    openBlockers: extra.openBlockers || [],
+    incompleteSubtasks: extra.incompleteSubtasks || [],
+  };
+}
+
+// Human-readable delta between a real verdict and a rehearsed one.
+function summarizeDelta(real, hypo, resolveKeys) {
+  if (real.verdict === hypo.verdict) {
+    return `Resolving ${resolveKeys.join(', ')} would NOT change the verdict — it stays ${real.verdict}. ` +
+      `${hypo.checksPassed - real.checksPassed} more check(s) would pass.`;
+  }
+  const remaining = hypo.receipts.filter((r) => r.result === 'fail');
+  return `Resolving ${resolveKeys.join(', ')} would move the verdict from ${real.verdict} to ${hypo.verdict}.` +
+    (remaining.length > 0
+      ? ` Still failing: ${remaining.map((r) => r.check.toLowerCase()).join(', ')}.`
+      : ' All checks would pass.');
+}
+
+module.exports = { evaluateIssue, summarizeDelta, STALE_DAYS };
+</script>
+<script>
+/* ShipCheck demo app. Port of static/shipcheck-panel/index.js render logic;
+   Forge bridge calls are replaced by the mock invoke below. */
+const APP_NAME = 'ShipCheck';
+const FROZEN_NOW = '2026-11-18T09:00:00Z';
+const Engine = module.exports;
+const evaluateIssue = Engine.evaluateIssue;
+const summarizeDelta = Engine.summarizeDelta;
+
+const $ = (id) => document.getElementById(id);
+const txt = (el, s) => { el.textContent = sanitizeDisplay(s); };
+
+// Display layer: em dash becomes a colon (with surrounding whitespace
+// normalised, so "SHIP-21 — In Progress" renders "SHIP-21: In Progress"),
+// and the literal app name maps to APP_NAME so the rename stays one line.
+// Applied ONLY to strings assigned to DOM text nodes. Engine untouched.
+function sanitizeDisplay(s) {
+  return String(s == null ? '' : s)
+    .replace(/\s*\u2014\s*/g, ': ')
+    .replace(/\bShipCheck\b/g, APP_NAME);
+}
+
+const VERDICT_CLASS = {
+  READY: 'ready',
+  'AT RISK': 'at-risk',
+  BLOCKED: 'blocked',
+  'INSUFFICIENT EVIDENCE': 'insufficient',
+};
+const RESULT_ICON = { pass: '✓', fail: '✕', unknown: '?' };
+
+// Scenarios: SCENARIO_1..7. Both SHIP-4 shapes share the issue key SHIP-4;
+// the harness binds the active scenario's issue into the mock store slot.
+const SCENARIOS = [
+  {
+    "id": "SCENARIO_1",
+    "label": "[1/7] SHIP-1 : BLOCKED (4/6) : Anchor + What-If Rehearsal (2 blockers, 1 subtask)",
+    "proof": "Anchor: BLOCKED by 2 open blockers. Rehearse both to see AT RISK.",
+    "fixtureOnly": false,
+    "issue": {
+      "fields": {
+        "assignee": {
+          "accountId": "557058:abc",
+          "displayName": "Priya Nair"
+        },
+        "duedate": "2026-12-01",
+        "issuelinks": [
+          {
+            "inwardIssue": {
+              "fields": {
+                "status": {
+                  "name": "In Progress",
+                  "statusCategory": {
+                    "key": "indeterminate",
+                    "name": "In Progress"
+                  }
+                },
+                "summary": "Payment provider contract"
+              },
+              "key": "SHIP-21"
+            },
+            "type": {
+              "inward": "is blocked by",
+              "name": "Blocks",
+              "outward": "blocks"
+            }
+          },
+          {
+            "inwardIssue": {
+              "fields": {
+                "status": {
+                  "name": "To Do",
+                  "statusCategory": {
+                    "key": "new",
+                    "name": "To Do"
+                  }
+                },
+                "summary": "Legal sign-off"
+              },
+              "key": "SHIP-22"
+            },
+            "type": {
+              "inward": "is blocked by",
+              "name": "Blocks",
+              "outward": "blocks"
+            }
+          },
+          {
+            "outwardIssue": {
+              "fields": {
+                "status": {
+                  "name": "Done",
+                  "statusCategory": {
+                    "key": "done",
+                    "name": "Done"
+                  }
+                },
+                "summary": "Analytics dashboard"
+              },
+              "key": "SHIP-30"
+            },
+            "type": {
+              "inward": "relates to",
+              "name": "Relates",
+              "outward": "relates to"
+            }
+          }
+        ],
+        "status": {
+          "name": "In Progress",
+          "statusCategory": {
+            "key": "indeterminate",
+            "name": "In Progress"
+          }
+        },
+        "subtasks": [
+          {
+            "fields": {
+              "status": {
+                "name": "Done",
+                "statusCategory": {
+                  "key": "done",
+                  "name": "Done"
+                }
+              },
+              "summary": "Migrate payment form"
+            },
+            "key": "SHIP-11"
+          },
+          {
+            "fields": {
+              "status": {
+                "name": "To Do",
+                "statusCategory": {
+                  "key": "new",
+                  "name": "To Do"
+                }
+              },
+              "summary": "Update error copy"
+            },
+            "key": "SHIP-12"
+          }
+        ],
+        "summary": "Checkout redesign release",
+        "updated": "2026-11-16T10:00:00.000Z"
+      },
+      "key": "SHIP-1"
+    }
+  },
+  {
+    "id": "SCENARIO_2",
+    "label": "[2/7] SHIP-2 : READY (6/6) : Clean baseline (owner, due date, subtasks done)",
+    "proof": "Clean baseline: owner, due date, subtasks done. READY 6/6.",
+    "fixtureOnly": false,
+    "issue": {
+      "fields": {
+        "assignee": {
+          "accountId": "557058:def",
+          "displayName": "Marcus Chen"
+        },
+        "duedate": "2026-12-01",
+        "issuelinks": [],
+        "status": {
+          "name": "In Progress",
+          "statusCategory": {
+            "key": "indeterminate",
+            "name": "In Progress"
+          }
+        },
+        "subtasks": [
+          {
+            "fields": {
+              "status": {
+                "name": "Done",
+                "statusCategory": {
+                  "key": "done",
+                  "name": "Done"
+                }
+              },
+              "summary": "Add filter chips"
+            },
+            "key": "SHIP-13"
+          }
+        ],
+        "summary": "Search filters polish",
+        "updated": "2026-11-17T10:00:00.000Z"
+      },
+      "key": "SHIP-2"
+    }
+  },
+  {
+    "id": "SCENARIO_3",
+    "label": "[3/7] SHIP-3 : AT RISK (3/6) : Missing owner, no due date, open subtask SHIP-14",
+    "proof": "Missing owner, no due date, open subtask SHIP-14.",
+    "fixtureOnly": false,
+    "issue": {
+      "fields": {
+        "assignee": null,
+        "duedate": null,
+        "issuelinks": [],
+        "status": {
+          "name": "To Do",
+          "statusCategory": {
+            "key": "new",
+            "name": "To Do"
+          }
+        },
+        "subtasks": [
+          {
+            "fields": {
+              "status": {
+                "name": "To Do",
+                "statusCategory": {
+                  "key": "new",
+                  "name": "To Do"
+                }
+              },
+              "summary": "Draft welcome email"
+            },
+            "key": "SHIP-14"
+          }
+        ],
+        "summary": "Onboarding email copy",
+        "updated": "2026-11-13T10:00:00.000Z"
+      },
+      "key": "SHIP-3"
+    }
+  },
+  {
+    "id": "SCENARIO_4",
+    "label": "[4/7] SHIP-4 : AT RISK : Stale update over 30 days old (2026-10-09)",
+    "proof": "Stale: last updated 2026-10-09, over 30 days old.",
+    "fixtureOnly": false,
+    "issue": {
+      "fields": {
+        "assignee": {
+          "accountId": "557058:ghi",
+          "displayName": "Danny Cole"
+        },
+        "duedate": "2026-12-01",
+        "issuelinks": [],
+        "status": {
+          "name": "In Progress",
+          "statusCategory": {
+            "key": "indeterminate",
+            "name": "In Progress"
+          }
+        },
+        "subtasks": [],
+        "summary": "Legacy report cleanup",
+        "updated": "2026-10-09T10:00:00.000Z"
+      },
+      "key": "SHIP-4"
+    }
+  },
+  {
+    "id": "SCENARIO_5",
+    "label": "[5/7] SHIP-5 : AT RISK : Overdue open issue (due 2026-11-01)",
+    "proof": "Overdue: due 2026-11-01, past, not done.",
+    "fixtureOnly": false,
+    "issue": {
+      "fields": {
+        "assignee": {
+          "accountId": "557058:abc",
+          "displayName": "Priya Nair"
+        },
+        "duedate": "2026-11-01",
+        "issuelinks": [],
+        "status": {
+          "name": "In Progress",
+          "statusCategory": {
+            "key": "indeterminate",
+            "name": "In Progress"
+          }
+        },
+        "subtasks": [],
+        "summary": "Mobile nav regression",
+        "updated": "2026-11-17T10:00:00.000Z"
+      },
+      "key": "SHIP-5"
+    }
+  },
+  {
+    "id": "SCENARIO_6",
+    "label": "[6/7] SHIP-6 : BLOCKED : Done issue with open blocker SHIP-22 (Inconsistency)",
+    "proof": "Done issue with open blocker SHIP-22. Inconsistency case.",
+    "fixtureOnly": false,
+    "issue": {
+      "fields": {
+        "assignee": {
+          "accountId": "557058:def",
+          "displayName": "Marcus Chen"
+        },
+        "duedate": "2026-11-10",
+        "issuelinks": [
+          {
+            "inwardIssue": {
+              "fields": {
+                "status": {
+                  "name": "To Do",
+                  "statusCategory": {
+                    "key": "new",
+                    "name": "To Do"
+                  }
+                },
+                "summary": "Legal sign-off"
+              },
+              "key": "SHIP-22"
+            },
+            "type": {
+              "inward": "is blocked by",
+              "name": "Blocks",
+              "outward": "blocks"
+            }
+          }
+        ],
+        "status": {
+          "name": "Done",
+          "statusCategory": {
+            "key": "done",
+            "name": "Done"
+          }
+        },
+        "subtasks": [],
+        "summary": "Billing page migration",
+        "updated": "2026-11-17T10:00:00.000Z"
+      },
+      "key": "SHIP-6"
+    }
+  },
+  {
+    "id": "SCENARIO_7",
+    "label": "[7/7] SHIP-4 [FIXTURE ONLY] : INSUFFICIENT EVIDENCE : Missing links and subtasks arrays",
+    "proof": "FIXTURE-ONLY STATE: Omits issuelinks and subtasks keys entirely to prove Rule 6 (Insufficient Evidence). Jira never seeds this shape directly; it tests payload defense.",
+    "fixtureOnly": true,
+    "issue": {
+      "fields": {
+        "assignee": {
+          "accountId": "557058:ghi",
+          "displayName": "Danny Cole"
+        },
+        "duedate": "2026-12-01",
+        "status": {
+          "name": "In Progress",
+          "statusCategory": {
+            "key": "indeterminate",
+            "name": "In Progress"
+          }
+        },
+        "summary": "Legacy report cleanup",
+        "updated": "2026-11-17T10:00:00.000Z"
+      },
+      "key": "SHIP-4"
+    }
+  }
+];
+
+// Expected verdicts, measured with the real engine at FROZEN_NOW.
+const EXPECTED = {
+  SCENARIO_1: { verdict: 'BLOCKED', checksPassed: 4, checksTotal: 6 },
+  SCENARIO_2: { verdict: 'READY', checksPassed: 6, checksTotal: 6 },
+  SCENARIO_3: { verdict: 'AT RISK', checksPassed: 3, checksTotal: 6 },
+  SCENARIO_4: { verdict: 'AT RISK', checksPassed: 5, checksTotal: 6 },
+  SCENARIO_5: { verdict: 'AT RISK', checksPassed: 5, checksTotal: 6 },
+  SCENARIO_6: { verdict: 'BLOCKED', checksPassed: 5, checksTotal: 6 },
+  SCENARIO_7: { verdict: 'INSUFFICIENT EVIDENCE', checksPassed: 3, checksTotal: 6 },
+};
+
+const mockStore = {};
+let activeScenarioId = 'SCENARIO_1';
+let lastResult = null;
+let showSources = false;
+
+function activeScenario() {
+  return SCENARIOS.find((s) => s.id === activeScenarioId);
+}
+
+// Mock Forge bridge. Same route names, response shapes and error strings
+// as shipcheck/src/index.js. The only seam: the engine runs with the frozen
+// clock instead of live time, and data comes from embedded fixtures.
+async function invoke(route, payload) {
+  if (route === 'getReadiness') {
+    const issueKey = payload && payload.issueKey;
+    if (!issueKey || typeof issueKey !== 'string') {
+      return { ok: false, error: 'No issue key provided.' };
+    }
+    const issue = mockStore[issueKey];
+    if (!issue) {
+      return { ok: false, error: 'Could not read ' + issueKey + ' from Jira (no fixture bound).' };
+    }
+    const result = evaluateIssue(issue, { now: FROZEN_NOW });
+    return { ok: true, issueKey, issueSummary: (issue.fields && issue.fields.summary) || issueKey, ...result };
+  }
+  if (route === 'rehearseWhatIf') {
+    const issueKey = payload && payload.issueKey;
+    const resolveKeys = (payload && payload.resolveKeys) || [];
+    if (!issueKey || typeof issueKey !== 'string') {
+      return { ok: false, error: 'No issue key provided.' };
+    }
+    if (!Array.isArray(resolveKeys) || resolveKeys.length === 0) {
+      return { ok: false, error: 'Pick at least one blocker to rehearse resolving.' };
+    }
+    const issue = mockStore[issueKey];
+    if (!issue) {
+      return { ok: false, error: 'Could not read ' + issueKey + ' from Jira (no fixture bound).' };
+    }
+    const real = evaluateIssue(issue, { now: FROZEN_NOW });
+    const hypo = evaluateIssue(issue, { now: FROZEN_NOW, resolveKeys });
+    return { ok: true, issueKey, real, rehearsed: hypo, resolveKeys, delta: summarizeDelta(real, hypo, resolveKeys) };
+  }
+  return { ok: false, error: 'Unknown route: ' + route + '.' };
+}
+
+function formatSource(source) {
+  if (!source) return '';
+  if (source.summary) return 'Source trace: ' + source.type + ' ' + source.key + ' (' + source.summary + ')';
+  if (source.field) return 'Source trace: field ' + source.field + ' on ' + source.key;
+  return 'Source trace: ' + source.type + ' ' + source.key;
+}
+
+function renderVerdict(result) {
+  const badge = $('verdict-badge');
+  txt(badge, result.verdict);
+  badge.className = 'verdict-badge ' + (VERDICT_CLASS[result.verdict] || '');
+  txt($('verdict-summary'), result.summary);
+  txt($('verdict-count'), result.checksPassed + ' of ' + result.checksTotal + ' checks passed.');
+}
+
+function renderReceipts(receipts) {
+  const list = $('receipts');
+  list.innerHTML = '';
+  for (const r of receipts) {
+    const li = document.createElement('li');
+    li.className = 'receipt ' + r.result;
+    const head = document.createElement('div');
+    head.className = 'receipt-head';
+    const icon = document.createElement('span');
+    icon.className = 'receipt-icon';
+    icon.textContent = RESULT_ICON[r.result] || '?';
+    const name = document.createElement('span');
+    name.className = 'receipt-name';
+    txt(name, r.check);
+    head.appendChild(icon);
+    head.appendChild(name);
+    const evidence = document.createElement('p');
+    evidence.className = 'receipt-evidence';
+    txt(evidence, r.evidence);
+    const detail = document.createElement('p');
+    detail.className = 'receipt-detail';
+    txt(detail, r.reason + ' Next step: ' + r.nextStep);
+    li.appendChild(head);
+    li.appendChild(evidence);
+    li.appendChild(detail);
+    if (showSources) {
+      const trace = document.createElement('p');
+      trace.className = 'receipt-detail';
+      trace.style.fontFamily = 'ui-monospace, SFMono-Regular, Menlo, monospace';
+      txt(trace, formatSource(r.source));
+      li.appendChild(trace);
+    }
+    list.appendChild(li);
+  }
+}
+
+function renderWhatIf(openBlockers) {
+  const section = $('whatif-section');
+  const list = $('whatif-list');
+  list.innerHTML = '';
+  if (!openBlockers || openBlockers.length === 0) {
+    section.classList.add('hidden');
+    return;
+  }
+  section.classList.remove('hidden');
+  for (const b of openBlockers) {
+    const label = document.createElement('label');
+    label.className = 'whatif-item';
+    const box = document.createElement('input');
+    box.type = 'checkbox';
+    box.value = b.key;
+    const text = document.createElement('span');
+    txt(text, b.key + ' — ' + (b.summary || 'no summary') + ' (' + ((b.status && b.status.name) || 'Unknown') + ')');
+    label.appendChild(box);
+    label.appendChild(text);
+    list.appendChild(label);
+  }
+  $('rehearsal').classList.add('hidden');
+}
+
+function renderJumpStrip(result) {
+  const jump = $('demo-harness-jump');
+  if (!result || !result.openBlockers || result.openBlockers.length === 0) {
+    jump.hidden = true;
+    return;
+  }
+  const keys = result.openBlockers.map((b) => b.key).join(', ');
+  const n = result.openBlockers.length;
+  txt(jump, 'DEMO SHORTCUT : ' + result.issueKey + ' has ' + n + ' open blocker' + (n === 1 ? '' : 's') + ' (' + keys + '). Jump to What-If Rehearsal');
+  jump.hidden = false;
+}
+
+function renderInspector() {
+  const pre = $('demo-harness-inspector');
+  if (pre.hidden) return;
+  const sc = activeScenario();
+  const sources = (lastResult ? lastResult.receipts : []).map((r) => ({ check: r.check, result: r.result, source: r.source }));
+  pre.textContent = JSON.stringify({ scenario: sc.id, issue: sc.issue, receiptSources: sources }, null, 2);
+}
+
+function showError(message) {
+  $('loading').classList.add('hidden');
+  $('panel').classList.add('hidden');
+  const el = $('error');
+  txt(el, message);
+  el.classList.remove('hidden');
+}
+
+async function refreshReadiness(issueKey) {
+  const result = await invoke('getReadiness', { issueKey });
+  if (!result.ok) {
+    if ($('panel').classList.contains('hidden')) {
+      showError(result.error || 'ShipCheck could not read this issue.');
+    } else {
+      const el = $('error');
+      txt(el, result.error || 'Re-check failed: showing the last verdict.');
+      el.classList.remove('hidden');
+    }
+    return false;
+  }
+  lastResult = result;
+  $('loading').classList.add('hidden');
+  $('error').classList.add('hidden');
+  $('panel').classList.remove('hidden');
+  txt($('issue-summary'), result.issueSummary || '');
+  renderVerdict(result);
+  renderReceipts(result.receipts);
+  renderWhatIf(result.openBlockers);
+  renderJumpStrip(result);
+  renderInspector();
+  return true;
+}
+
+// Switching tickets tears down panel state first (in Jira the iframe
+// reloads; in a single page the demo must do the same explicitly).
+function bindScenario(id) {
+  activeScenarioId = id;
+  const sc = activeScenario();
+  mockStore[sc.issue.key] = sc.issue;
+  const sel = $('demo-harness-select');
+  sel.value = id;
+  const proof = $('demo-harness-proof');
+  txt(proof, sc.proof);
+  proof.classList.toggle('demo-harness-amber', !!sc.fixtureOnly);
+  $('rehearsal').classList.add('hidden');
+  $('demo-harness-inspector').hidden = true;
+}
+
+async function loadScenario(id) {
+  bindScenario(id);
+  const sc = activeScenario();
+  txt($('issue-key'), sc.issue.key);
+  await refreshReadiness(sc.issue.key);
+}
+
+async function runBootSelfTest() {
+  const badge = $('demo-harness-selftest');
+  let passed = 0;
+  const total = 8;
+  const failures = [];
+  for (const sc of SCENARIOS) {
+    mockStore[sc.issue.key] = sc.issue;
+    const r = await invoke('getReadiness', { issueKey: sc.issue.key });
+    const exp = EXPECTED[sc.id];
+    if (r.ok && r.verdict === exp.verdict && r.checksPassed === exp.checksPassed && r.checksTotal === exp.checksTotal) {
+      passed++;
+    } else {
+      failures.push(sc.id + ': got ' + (r.ok ? r.verdict + ' ' + r.checksPassed + '/' + r.checksTotal : 'error') + ', expected ' + exp.verdict + ' ' + exp.checksPassed + '/' + exp.checksTotal);
+    }
+  }
+  // Rehearsal check: SHIP-1 both blockers move BLOCKED to AT RISK.
+  const s1 = SCENARIOS[0].issue;
+  const reh = await invoke('rehearseWhatIf', { issueKey: 'SHIP-1', resolveKeys: ['SHIP-21', 'SHIP-22'] });
+  if (reh.ok && reh.rehearsed.verdict === 'AT RISK' && reh.delta.indexOf('BLOCKED to AT RISK') !== -1) {
+    passed++;
+  } else {
+    failures.push('rehearsal SHIP-1: expected AT RISK with BLOCKED to AT RISK delta');
+  }
+  if (failures.length === 0) {
+    txt(badge, 'Self-test: 7/7 verdicts verified');
+  } else {
+    badge.classList.add('demo-harness-fail');
+    txt(badge, 'Self-test: FAILED (' + passed + '/' + total + ' checks passed). See inspector.');
+    console.warn('ShipCheck demo self-test failures:', failures);
+  }
+  return failures;
+}
+
+function init() {
+  txt($('app-name'), APP_NAME);
+  document.title = APP_NAME + ' demo';
+  txt($('panel-footer'), APP_NAME + ' reads live Jira fields only: status, subtasks, linked blockers, assignee, due date. Unknown is never a pass. This is a Jira-evidence readiness check, not a release authorization.');
+  const sel = $('demo-harness-select');
+  for (const sc of SCENARIOS) {
+    const opt = document.createElement('option');
+    opt.value = sc.id;
+    opt.textContent = sc.label;
+    sel.appendChild(opt);
+  }
+  sel.addEventListener('change', () => loadScenario(sel.value));
+  $('demo-harness-prev').addEventListener('click', () => {
+    const i = SCENARIOS.findIndex((s) => s.id === activeScenarioId);
+    loadScenario(SCENARIOS[(i + SCENARIOS.length - 1) % SCENARIOS.length].id);
+  });
+  $('demo-harness-next').addEventListener('click', () => {
+    const i = SCENARIOS.findIndex((s) => s.id === activeScenarioId);
+    loadScenario(SCENARIOS[(i + 1) % SCENARIOS.length].id);
+  });
+  $('demo-harness-sources').addEventListener('change', (e) => {
+    showSources = e.target.checked;
+    if (lastResult) renderReceipts(lastResult.receipts);
+  });
+  $('demo-harness-jump').addEventListener('click', () => {
+    const section = $('whatif-section');
+    section.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    section.classList.add('demo-harness-highlight');
+    setTimeout(() => section.classList.remove('demo-harness-highlight'), 1500);
+  });
+  $('demo-harness-inspector-toggle').addEventListener('click', () => {
+    const pre = $('demo-harness-inspector');
+    pre.hidden = !pre.hidden;
+    renderInspector();
+  });
+  $('rehearse-btn').addEventListener('click', async () => {
+    const picked = Array.from(document.querySelectorAll('#whatif-list input:checked')).map((el) => el.value);
+    const out = $('rehearsal');
+    if (picked.length === 0) {
+      txt(out, 'Pick at least one blocker to rehearse resolving.');
+      out.classList.remove('hidden');
+      return;
+    }
+    txt(out, 'Rehearsing…');
+    out.classList.remove('hidden');
+    try {
+      const rehearsed = await invoke('rehearseWhatIf', { issueKey: activeScenario().issue.key, resolveKeys: picked });
+      if (!rehearsed.ok) {
+        txt(out, rehearsed.error || 'Rehearsal failed.');
+        return;
+      }
+      const badge = document.createElement('div');
+      badge.className = 'verdict-badge ' + (VERDICT_CLASS[rehearsed.rehearsed.verdict] || '');
+      txt(badge, rehearsed.rehearsed.verdict);
+      out.innerHTML = '';
+      out.appendChild(badge);
+      const delta = document.createElement('p');
+      txt(delta, rehearsed.delta);
+      out.appendChild(delta);
+      const note = document.createElement('p');
+      note.className = 'hint';
+      txt(note, 'Rehearsal only — the real verdict above is unchanged.');
+      out.appendChild(note);
+    } catch (err) {
+      txt(out, 'Rehearsal failed: ' + (err.message || err));
+    }
+  });
+  $('recheck-btn').addEventListener('click', async () => {
+    $('recheck-btn').disabled = true;
+    $('recheck-btn').textContent = 'Checking…';
+    try {
+      await refreshReadiness(activeScenario().issue.key);
+    } finally {
+      $('recheck-btn').disabled = false;
+      $('recheck-btn').textContent = 'Re-check';
+    }
+  });
+  runBootSelfTest().then(() => loadScenario('SCENARIO_1'));
+}
+
+init();
+</script>
+</body>
+</html>
