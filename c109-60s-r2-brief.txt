@@ -1,0 +1,3103 @@
+# C109 First-60s Probe — REVIEW ROUND 2 BRIEF (2026-11-19)
+
+You are reviewing the SECOND round of the first-60s pool-flow probe for the Kaggle memecoins-pump-or-dump competition. R1 is done: three legs (Gemini NO EDGE READY; Notion INCONCLUSIVE NOT READY; GPT INCONCLUSIVE NOT READY), merged to a narrowly-scoped INCONCLUSIVE headline, 16 defects, fixes applied. This brief gives you the v5 rerun results plus the §5.6 host evidence that has landed since R1. Your job: re-rule the frozen §3.8 verdict criteria on the v5 numbers and say whether the headline stands or moves.
+
+## What changed since R1
+
+1. **Kernel v5 rerun COMPLETE and parent-verified** (kernel rsaxena3011/c109-first-60s-audit-build, run ~34 min, §12 audit PASS). It fixed the two v5 code changes R1 confirmed: the 55s bug (CELL2B `finalize_acc` set p60 = NaN unconditionally — feat55 p60 finite was 0/47,031) and the `8_guards: None` serialisation (hardcoded literal, never wired). v5 results: feat55 p60 finite 47,031/47,031; 55s_E2h now has real trades (p1 23, p2 52, p3 45, p4 285, p5 247, p6 247, p7 106, p8 285) with EV/trade −0.459 to −0.764, all negative; every non-55s number reproduces v4 bit-identically (six files md5-identical); 8_guards now reads False for all 8 policies; edge=False everywhere.
+2. **§5.6 host evidence LANDED** (see the evidence file pasted below, verbatim). The floor is RESOLVED: the official payoff is floored at −1.0 per bought token (host Evaluation text + starter notebook 2 pnl code). The sustained maximum is the trimmed maximum (top max(1%, 1) prints discarded) — the label columns' max_x IS the sustained maximum by definition, so direct label scoring stands. Entry anchor confirmed: last trade at or before mt+60s, prices from pool effective reserves (Branch A). The v5 results file below still carries the header line "Floor: UNRESOLVED" — that line is STALE (the kernel ran before the evidence fetch finished). Rule the floor as RESOLVED per the evidence file; the floored scoring is the official one, the unfloored scoring is a conservative extra. The bar fails under both scorings.
+3. **R1 merge + fix record** are pasted below verbatim (merged headline INCONCLUSIVE, 16 defects, dispositions, addendum §A1–§A12 with November CIs, paired CIs, guard definitions, Branch A stop rule, bar-numbering mapping). The revised results file (v4 results byte-identical + addendum) is pasted below verbatim, followed by the full-precision v5 `sixtysec_results.json`.
+
+## Parent's own take (provisional, for the record)
+
+INCONCLUSIVE stands (see `SIXTY_SEC_REVIEW_R2_TAKE_own_2026-11-19.md`): R1's decisive driver was CI-straddling for the strongest candidates (p2 CI [−0.6253, +0.1423], p3 [−0.9884, +0.2262]) with no validated conservative bound excluding positive EV. v5 changes nothing about that; 55s adds a third straddler (p1 55s CI [−0.9970, +0.1510]). The floor resolution removes one §3.8 uncertainty but not the decisive one. Scoped negatives (p1/p4/p5/p6/p8, CIs entirely below zero under both scorings) stand and are not re-openable on the v4 evidence. Rule it yourself from the pasted material — do not take the parent's take on trust.
+
+## Rules for this review
+
+- Rule ONLY from the material pasted in this brief. DO NOT web-search, DO NOT fetch any other page or document. (R1's GPT leg web-searched despite the same instruction and conflated this probe's frozen merge with a DIFFERENT competition's merge — its calibration-mismatch defect was struck with prejudice. Do not repeat it.)
+- The frozen config for THIS probe is: tp grid {3, 5, 10} ("tp > 20 banned"); calibrators {3: isotonic, 5: platt, 10: platt} by nested logloss selection; tau* = 0.00. Do not import any other configuration from anywhere else.
+- The scoped negative findings for p1/p4/p5/p6/p8 (95% day-block CIs entirely below zero under both scorings) are NOT re-openable on the v4 evidence. The p4/p8 identity is by construction (selected-tp distributions in addendum §A5).
+- The bar-numbering mapping is in addendum §A7: code key 1 = §3.7 legs 1+2 combined; key 2 = leg 3 (both halves); key 3 = leg 4 (n_eff ≥ 2,500); key 4 = leg 5 (paired); key 5 = leg 6 (flat-0.40); key 6 = leg 7 (Holm); key 7 = leg 8 (implementable); key 8 (`8_guards`) = the guards block.
+- The Branch A stop rule (addendum §A9): STOP iff the fraction with m_i > 1 (labelled mints with n1_i ≥ 10) is < 5%. Kernel: 44.76% (n1 ≥ 10) / 45.92% (n1 ≥ 100) → PASS is correct. The 0.6667 figure is a 6-mint descriptive reference, never a target.
+- `november_non_reversal` is an EDGE leg: True only when November confirms a positive edge (November EV > 0 AND pooled Oct+Nov 95% CI lower bound > 0). It is False for all 8 policies. For the five policies with negative November EV there is no reversal at all — the name is misleading, the value is correct as an edge condition.
+
+## Answer format
+
+Begin your reply with the verdict block, exactly:
+```
+Review verdict: <APPROVE / APPROVE WITH CHANGES / NOT READY>
+Results ruling: <EDGE FOUND / NO EDGE / INCONCLUSIVE / SIGNAL FOUND, NOT SUBMITTABLE>
+Linked submission: <KEEP v1 SKIP-ALL / describe the change, if any>
+Defects: <N BLOCKING / N MAJOR / N MINOR>
+```
+Then answer Q1–Q8 below, then a numbered defect register (BLOCKING / MAJOR / MINOR, each with the exact numbers and the artifact or pasted section that proves it). Verdicts, numbers, and defect counts must come from the pasted material. If a number cannot be verified from the pasted material, say UNVERIFIED and name the artifact that would verify it — do not assert it.
+
+## Q1. Re-rule §3.8 on the v5 numbers
+
+Does any candidate gain a validated conservative bound excluding positive EV (which would move the headline toward NO EDGE), or does CI-straddling persist (INCONCLUSIVE stands)? Consider: 60s p2 (EV −0.2745, CI [−0.6253, +0.1423], eff n 32) and p3 (EV −0.5467, CI [−0.9884, +0.2262], eff n 29.0026); 55s p1 (EV −0.4588, CI [−0.9970, +0.1510]); p7 floored CI crossing zero (upper +0.0435). The floor is now resolved — does that remove a §3.8 INCONCLUSIVE uncertainty, and does it change the headline? State the headline you rule and the exact §3.8 clause it rests on.
+
+## Q2. Verify the v5 rerun
+
+(a) 55s eligibility is now > 0 (feat55 p60 finite 47,031/47,031; 55s_E2h trades 23/52/45/285/247/247/106/285; eligible_tokens 16,213). (b) All other numbers reproduce v4 bit-identically (the six non-55s files are md5-identical; the v5 results table's primary/E1h/November rows match v4 exactly). (c) `8_guards` now reads False (not None) for all 8 policies under both scorings, with guard values identical to v4. (d) The §12 audit PASSED. Confirm each from the pasted v5 results file and JSON, or flag the mismatch.
+
+## Q3. Floor resolution (D8 closed?)
+
+Does the §5.6 evidence file close defect D8 (host scoring evidence unresolved)? Confirm: (a) the floor is −1.0 official per the Evaluation text and starter notebook 2; (b) the sustained maximum is the trimmed maximum and the label max_x is consistent with direct label scoring; (c) the entry anchor (last trade at/before mt+60s, pool effective reserves) confirms Branch A and the probe's P60 construction; (d) the bar fails under both scorings, so the floor cannot flip the bar outcome. Does anything in the evidence change any v4/v5 number? (The parent's record: no.)
+
+## Q4. Scoped negatives and the p4/p8 identity
+
+Confirm the scoped negative findings stand: p1/p4/p5/p6/p8 have 95% day-block CIs entirely below zero under both scorings (quote the CIs). Confirm the p4/p8 byte-identity is by construction from the selected-tp distributions (primary p8 {tp 3: 346}; p7 {10: 37, 5: 29, 3: 17}) and the nested flow triggers — not a copy bug. Is there any remaining reading under which p8's result is invalid?
+
+## Q5. November lottery noise
+
+Confirm from addendum §A1/§A2: no November positive is significant (p1 p=0.27, p3 p=0.094, p7 p=0.083); p4's November CI is entirely negative; p3's +14.39 rests on one +8.70 hit + one +7.86 near-miss (without them −2.17); p7's +17.10 is 96.8% those same two trades. Does the November evidence support any edge claim, or does it confirm lottery noise? What does `november_non_reversal=False` mean for each policy under the guard definition?
+
+## Q6. Guards and paired tests
+
+Confirm from the pasted JSON and addendum §A4/§A8: raw p_one [0.9993, 0.9164, 0.9297, 1.0, 1.0, 1.0, 0.9907, 1.0] → Holm adj all 1.0000; paired vs flow (p1 −0.6842, p2 −0.2462 CI crossing zero, p3 −0.5467, p7 −0.5053); policy-level CIs vs skip-all (upper bound ≤ 0 for the flow policies p4/p5/p6/p8); leave-one-day-out EVs all negative (p1 −0.7978 … p8 −0.6460). Does any guard or paired test support an edge claim?
+
+## Q7. Branch A audit PASS
+
+Confirm the Branch A acceptance rule is stated and applied correctly: STOP iff frac(m_i > 1, n1 ≥ 10) < 5%; kernel 44.76% / 45.92% → PASS. Is the 0.6667-vs-0.4476/0.4592 comparison a category error (6-mint descriptive reference vs 47,030-mint kernel fraction), as the R1 merge rules? Is there any remaining Branch A uncertainty that blocks a verdict?
+
+## Q8. Independent arithmetic audit
+
+Re-add from the pasted v5 JSON (full precision) and the results tables: (a) the 55s_E2h table — trade counts, EVs, CIs (unfloored and floored), eff n, halves; (b) the primary E2h table (unchanged from v4 — spot-check at least p2, p3, p4); (c) the E1h floored EVs (addendum §A6) and eff n; (d) the November-only CIs and p-values (addendum §A1); (e) the Holm adjustment from the raw p-values. List every check as PASS / FAIL / UNVERIFIED with the recomputed value. Any arithmetic error anywhere in the pasted material goes in the defect register.
+
+---
+
+## FROZEN SECTIONS (verbatim from SIXTY_SEC_MERGE_2026-11-18.md)
+
+### §3.6 Confirmatory policy family (verbatim)
+
+
+| # | Policy | tp |
+|---|---|---|
+| 1–3 | HGB P(hit) + EV-threshold (nested-selected) | 3, 5, 10 |
+| 4–6 | Interpretable flow rule (frozen from Discovery: S14 + S15 + F-FRESH thresholds) | 3, 5, 10 |
+| 7 | HGB multi-tp (tp chosen per token from {3,5,10} by max predicted EV) | — |
+| 8 | Flow-rule multi-tp (same, rule-based) | — |
+
+tp > 20 banned unless ≥ 30 observed hits in an inner cell (re-run Gemini leg,
+adopted). No s × tp grid search inside the multiplicity budget. Holm over M = 8
+for confirmatory claims. Branch B bound screen (if applicable) tests the same 8
+policies' optimistic bounds — same family, no second family.
+
+
+### §3.7 The bar (verbatim)
+
+1. Net EV/trade > 0 after the hosts' 0.3.
+2. 95% day-block bootstrap CI lower bound > 0 (block = UTC calendar day; DE floored
+   ≥ 1; report raw trades, effective trades, days).
+3. Both halves (Oct 2–16, Oct 17–31) positive.
+4. n_eff ≥ 2,500 effective OOS trades (target 4,500); n_eff = n_trades / max(1, DE).
+5. Paired incremental EV positive with CI excluding 0, vs BOTH skip-all (day-block
+   PnL) AND the simple flow rule.
+6. Flat-0.40 stress: point estimate EV/trade > 0 (i.e. EV > +0.10 under the 0.3 cost).
+7. Holm-adjusted p < 0.05 over the 8-policy family.
+8. Implementable: G-60-1a PASS (under the amended definition M11 — local items
+   pass + kernel items specified with stop-conditions, owed before any verdict
+   file) + G-60-1b PASS (incl. end-to-end CPU proof).
+Guards (failure = verdict capped, not passed): November non-reversal (Nov 1–16
+point estimate > 0 AND pooled Oct+Nov 95% CI lower bound > 0); leave-one-day-out
+(Confirmation EV/trade stays positive after dropping the single best day).
+
+
+### §3.8 Verdict criteria (verbatim)
+
+- **EDGE FOUND:** both gates PASS (incl. representative live-path CPU test);
+  official payoff-contract provenance; exact feature/price coverage; frozen policy
+  spec; full Discovery / Confirmation (both halves, leave-one-day-out) / November
+  numbers — raw + effective trades, day counts, hit rate vs breakeven (per-bucket
+  breakeven, not pooled — GPT re-run leg), EV/trade and EV/token, day-block CIs,
+  Holm-adjusted tests, 0.40 stress, paired comparators; retirement table; exact
+  candidate submission change described for the boss's decision (never made by the
+  probe); R1 + R2 hostile sign-off with 0 BLOCKING; boss's explicit go before any
+  notebook change.
+- **NO EDGE:** same split-level denominators, economics, uncertainty, multiplicity,
+  coverage, gate outcomes, retirement table; precise scope (the pre-registered
+  candidates fail the bar; where supported, a validated conservative bound excludes
+  positive EV). If the n_eff leg is missed, say so — never "well-powered null."
+  v1 stands because no candidate met the bar, not because all conceivable
+  first-minute strategies are disproved.
+- **INCONCLUSIVE:** the exact uncertainty preventing a call (CI straddling 0,
+  n_eff < 2,500, halves/November contradiction, unresolved payoff reconstruction,
+  broken chronology, unverified mechanics), with measured coverage, bounds, split
+  counts, gate status, multiplicity, retirement table. v1 stands by default.
+- **SIGNAL FOUND, NOT SUBMITTABLE:** distinct from INCONCLUSIVE — the frozen
+  historical analysis has valid positive evidence (full EDGE-level numbers) but the
+  live gate (G-60-1) is open or fails. Name the specific missing/failed requirement;
+  no deployment recommendation. If the payoff itself cannot be reconstructed, the
+  classification is measurement-blocked INCONCLUSIVE, not signal-found.
+- **Most likely false positive (all three legs agree):** rewarding the model for a
+  price peak that occurred before its simulated purchase (S06/S17 identifying early
+  moves, pseudo-labels treating them as post-entry hits), compounded by selecting
+  the best tp/policy on the same confirmation data. Guarded by the branch verdict,
+  the S05/S06 ban under Branch B, the EV-interval bound, and frozen confirmation.
+
+
+### §4 — What the Stage 0 audit must return (verbatim)
+
+| # | Item | Pass criterion |
+|---|---|---|
+| A1 | Pumpswap schema (sample + kernel spec) | Column list vs pumpfun; `failed` presence/absence; reserves/slot/fee_payer/creator fields confirmed; row counts + file sizes for CPU/RAM budget; min/max(ts − mt) — 60s only or full hour+? |
+| A2 | Pumpfun post-mt rows reconciled | What they are (signature/price comparison vs pumpswap rows for shared mints); straggler vs real-trade verdict. |
+| A3 | Label-anchor verdict (Branch A / B / UNRESOLVED) | Starter notebooks verbatim (tables, timestamp filters, price columns, PnL simulation, floor?) + empirical reconciliation of train.csv max_x/final_x against pumpswap prices (in-window max test) + Evaluation-text search ("floor", "last trade", "snapshot"). **Notebook sub-item WAIVED per audit M9 as amended (not passed); notebook text owed pre-verdict.** |
+| A4 | Trimming + floor | Trimming confirmed (Data page — done in merge). Floor verified or marked UNVERIFIED with the both-reporting rule. |
+| A5 | P60 constructibility | Last-successful-trade price at/before mt+60s computable per mint; valid-snapshot coverage counted; thin-window handling frozen (§3.2). |
+| A6 | test.csv parity | Schema, mt distribution, (mt, mt+60s] pumpswap coverage, max(ts−mt) distribution vs train.csv. |
+| A7 | 47,392 vs 47,031 | Reconciled in merge §1(d); audit re-verifies from local label files + manifest. |
+| A8 | G-60-1a verdict | PASS/FAIL with the evidence list in §1(e) **as amended by M11/M25** (local items pass + kernel items specified with stop-conditions, owed pre-verdict). |
+| A9 | G-60-2 verdict | PASS/FAIL per branch (§3.1). |
+| A10 | Kernel audit spec (for full-parquet items not runnable locally) | Exact kernel steps, files, assertions, and expected outputs — so the full-parquet audit can run without re-deciding anything. |
+
+If A3 returns UNRESOLVED, or A9 fails fatally, the audit records the failure and
+the probe STOPS — no build follows. The audit's local part uses kaggle-venv python
++ already-attached data only. No parquet download. No paid spend.
+
+
+### §5 item 6 — Evaluation-tab + starter-notebook-2 text (verbatim)
+6. **Evaluation-tab + starter-notebook-2 text (fix pass, R1/R2 M1/M9):** fetch
+   via live browser / Kaggle API before any verdict file. Settles the floor
+   (Evaluation text / notebook PnL code) and the "sustained" vs "maximum"
+   wording question. Parent item.
+
+---
+
+## §5.6 HOST EVIDENCE (verbatim from SIXTY_SEC_EVIDENCE_2026-11-19.md — floor RESOLVED)
+
+# C109 First-60s Probe — §5.6 Host Evidence (2026-11-19)
+
+Fetch: browser task, read-only, ran 2026-11-19 04:38–05:52 IST (23:08–00:22 UTC, 1h 14m). All five items read live from kaggle.com/competitions/memecoins-pump-or-dump (Overview, Evaluation, Rules, Data, starter notebook 2). No sign-in was required (already signed in as Ratnesh Saxena); nothing submitted, voted on, or changed. Full browser-task report saved at ~/workspace/agents/29f342eb-51cd-4cf6-9622-910cbc246a46/subagent-output/0526954a-aaf8-4ebd-ab84-66bb7cc3cdce-result-ce73796b5a06.txt.
+
+Limitations: (1) Page-to-PDF saving failed twice (broker error), so no PDF artifacts — the verbatim texts in the saved report are the deliverable. (2) The starter-notebook .ipynb download did not dispatch, so its PnL code was transcribed from enlarged screenshots of code cells In[1] and In[5], verified line by line — NOT byte-exact. (3) The standings table (205 rows) was summarised, not reproduced row by row.
+
+## Item 5 — Provenance confirmation: YES
+
+Both Stage-0 provenance excerpts appear verbatim on the live Data page:
+
+- Step 6: entry price is the pool price after the last trade at or before mt + 60s; on the tape that is new_price of the token's last AMM row. The label window is the hour that follows. final_x is the last price of that hour over the entry price; max_x is the maximum over the same window after discarding the top max(1%, 1) prints.
+- Definitions: entry = price of the last trade at or before migration + 60s; max_x = sustained maximum over (snapshot, snapshot + 1h], after discarding the top max(1%, 1) prints; final_x = price of the last trade of that window, divided by entry; prices come from the pool's effective reserves after each trade (quote + virtual_quote_reserves over base), not from the ratio of a single swap's amounts.
+
+## Item 1 — Evaluation: THE FLOOR IS RESOLVED
+
+Payoff per token, verbatim in substance: tp = 0 → pnl 0. tp in [3, 100] → pnl = tp − 1 − 0.3 if the sustained maximum reaches tp within the hour, otherwise pnl = max(final_x − 1 − 0.3, −1). Score = sum of pnl over all test tokens. Entry = price of the last trade at or before migration + 60 seconds. Window = the next 60 minutes after that snapshot. "Sustained" = maximum after discarding the top max(1%, 1) highest-priced trades of the window; "If a token has too few trades for that trim to be meaningful, no level is considered reachable and the position is carried to the end of the hour."
+
+**Floor: −1.0 per bought token is OFFICIAL** ("the −1 floor means you cannot lose more than the position"). The probe's FLOORED variant is the official payoff; the unfloored variant was the conservative extra. The bar fails under both scorings, so the headline does not change — but the floor is no longer an open question.
+
+Corroboration: the hosts' own "about 17%" breakeven figure matches the probe's FLOORED tp=5 breakeven (17.40%), not the unfloored (20.69%).
+
+## Item 3 — Starter notebook 2 PnL code (screenshot-transcribed)
+
+Notebook: parrotexplorator/pump-or-dump-2-full-feature-model, v5. Setup cell In[1]: COST, WIN, EMBARGO, K = 0.3, 3600, 3600, 5. The pnl function: hit = (max_x >= tp) & (tp > 0); held = np.maximum(final_x − 1 − cost, −1.0); return np.where(tp <= 0, 0.0, np.where(hit, tp − 1 − cost, held)). Same −1.0 floor. Walk-forward protocol (In[5]): one fold per training day over the last 16 days; per-token decisions against a threshold fixed from training data only; buy at tp = 5 when the score clears the threshold. Closing note: "Break-even precision at tp = 5 is about 17%."
+
+## Item 2 — Rules (full text in the saved report)
+
+Key points for the probe: §1 score = total PnL, loss floored at −1.0 per position. §3 notebook retrained daily, scored on one test day; final score = sum of 14 daily PnLs, Dec 1–14, 2026. §6 timing rule: every feature computable from info available at migration + 60s plus history already resolved; cross-token aggregates only over tokens whose hour elapsed (≥3600s earlier); "A feature is legal if deleting all tokens that migrated after it leaves the feature unchanged." §12 prizes only for positive official scores. Freeze: Nov 30, 2026, 23:59 UTC; team composition freezes with it.
+
+## Item 4 — Overview + Data (full texts in the saved report)
+
+- Prize fund: $5,000 across ten places (1st $1,250 … 10th $150), sponsored by Dmitry Dryomov; community-contribution awards on top, discretionary. Eligibility: notebook sent to the bot (@pumpfun_competition_bot) at least once + /link before the freeze.
+- Universe filter (Data Step 2): migration happened, ≥1 SOL reached the pool, ≥1 AMM trade in the first 60s, SOL quote, PumpSwap pool, not flagged manipulated. 33,570 tokens in train+test from ~900k migrations (3.7%).
+- Data Step 4 (joins): AMM join must use (mint, day); direction is relative to base_token (normalise before pooling orientations); price from pool reserves (new_price), never single-swap ratios.
+- Data Step 8: train.csv = last 30 days (16,291 rows); test.csv = one day (767 rows); train_archive.csv = all earlier labelled days from 2026-08-21. Test tokens carry no max_x/final_x. Last two hours before the test day excluded from training.
+- Standings as read live: test day 2026-11-17, 324 tokens, 53 days scored; top +4.40; many at exactly +0.00; bottom −243.11. Context only.
+- Bot sandbox: 4 CPU cores, 31 GB RAM, 1h wall time; same Kaggle CPU image (v170, pinned digest).
+
+## D8 RESOLUTION — what this closes for the probe
+
+R1 merge defect D8 (host scoring evidence unresolved / floor UNRESOLVED) is now CLOSED:
+
+1. **Floor = −1.0, official.** The probe's floored scoring is the hosts' payoff. Unfloored remains a conservative sensitivity only.
+2. **Sustained max = trimmed max.** The label columns' max_x IS the sustained maximum by the hosts' own definition (Step 6), so scoring the label columns directly — as the probe did — is consistent with the official payoff. The "too few trades" clause is encoded in the labels (no level reachable → held to end of hour).
+3. **Entry anchor confirmed (Branch A).** Entry = new_price of the last AMM row at/before mt+60s, from pool effective reserves. The probe's P60 anchor matches.
+4. **Timing rule consistent.** The probe's frozen design (features from the first 60s + history resolved by decision time) satisfies Rules §6 as written.
+5. **Headline unchanged.** The bar fails under BOTH scorings, so resolving the floor to floored does not move the R1 merged headline (INCONCLUSIVE, narrowly scoped on §3.8 CI-straddling). What changes: the floor is no longer a §3.8 INCONCLUSIVE contributor — the CI-straddling for p2/p3 and the (now fixed, pending v5 rerun) 55s mechanics are the remaining call-preventing uncertainties.
+
+Nothing in this evidence changes any v4 number. R2 may now sign off a verdict file once the v5 rerun lands (R1 merge §4 condition satisfied for D8).
+
+---
+
+## R1 MERGE (verbatim from SIXTY_SEC_REVIEW_R1_MERGE_2026-11-19.md)
+
+# C109 First-60s Probe — Review Round 1 MERGE (2026-11-19)
+
+Merge/fix coordinator: build subagent. Own take first
+(`SIXTY_SEC_REVIEW_R1_TAKE_build_2026-11-19.md`, ≤250 words), then this merge
+of the three verbatim R1 legs. Brainstorm-first + two review rounds govern
+this probe; R2 follows after this fix record. **No verdict file is written
+here** — `SIXTY_SEC_VERDICT_2026-11-18.md` comes only after R2.
+
+Panel legs: Gemini — NO EDGE, READY (0 BLOCKING / 1 MAJOR non-blocking +
+4 MINOR). Notion — INCONCLUSIVE, NOT READY (4 BLOCKING + 2 MAJOR + 1 MINOR).
+GPT — INCONCLUSIVE, NOT READY (6 BLOCKING + 4 MAJOR).
+Parent's own take: NO EDGE (provisional). Coordinator's own take: INCONCLUSIVE.
+
+## 1. MERGED HEADLINE: INCONCLUSIVE, narrowly scoped
+
+§3.8 read verbatim (merge `SIXTY_SEC_MERGE_2026-11-18.md`):
+
+- NO EDGE requires "a validated conservative bound excludes positive EV"
+  where the negative is claimed.
+- INCONCLUSIVE is "the exact uncertainty preventing a call (CI straddling 0,
+  n_eff < 2,500, halves/November contradiction, unresolved payoff
+  reconstruction, broken chronology, unverified mechanics)".
+
+**Ruling.** NO EDGE does not fire for the probe as a whole. The strongest
+candidates are p2 (EV −0.2745, CI [−0.6253, +0.1423], eff n 32) and p3
+(EV −0.5467, CI [−0.9884, +0.2262]); no validated conservative bound
+excludes positive EV for either — their CIs straddle zero under BOTH scorings
+(p2 floored CI [−0.5122, +0.2105]; p3 floored [−0.7737, +0.3891]; p7 floored
+CI crosses zero too, upper +0.0435). §3.8 names "CI straddling 0" as a
+call-preventing uncertainty, so the headline is INCONCLUSIVE. This overrules
+the parent's provisional NO EDGE take and Gemini's NO EDGE, and agrees with
+2 of 3 panel legs on the headline — stated plainly, as the brief required.
+
+**What does NOT force INCONCLUSIVE:** the n_eff shortfall alone (§3.8
+anticipates NO EDGE with n_eff missed — "If the n_eff leg is missed, say so");
+the floor alone (the bar fails under both scorings, so the floor cannot flip
+the bar outcome). The CI-straddling for the strongest candidate is the
+decisive driver; the floor (§5.6 outstanding) and the 55s bug (unverified
+mechanics) are second and third independent contributors.
+
+**Scoped negative findings stand** (they survive under either headline):
+flow policies p4/p5/p6/p8 and p1 have 95% day-block CIs entirely below zero
+under both scorings (p4 [−0.7592, −0.4745] / floored [−0.5771, −0.3178];
+p1 [−1.0755, −0.3212] / floored [−0.8302, −0.1637]). For those five
+policies the negative is established; for p2/p3/p7 it is not. v1 skip-all
+stands under either headline.
+
+## 2. DEFECT REGISTER (16 distinct defects after dedup)
+
+Dispositions: CONFIRMED / CORRECTED / STRUCK / DOWNGRADED / OUTSTANDING /
+ADDRESSED (no action). Counts: 3 STRUCK, 1 OUTSTANDING, 1 ADDRESSED, 11
+confirmed / corrected / downgraded (table is authoritative).
+
+| # | Source | Defect | Disposition + evidence |
+|---|---|---|---|
+| D1 | G1 / N-M1 / P-M7 | 55s_E2h elig = 0, unexplained | **CONFIRMED — BUG.** `finalize_acc` (CELL2B) sets `f["p60"] = np.nan` unconditionally in the w=55 branch, contradicting its own comment; `assemble()` gates elig on finite p60. feat55: 47,031 rows, n_rows>0 everywhere, p60 finite 0, elig 0 (kernel log confirms). Fix in v5 candidate (copy `feat_ps[mint]["p60"]`). 55s result withdrawn pending v5 rerun. |
+| D2 | G2 / N-m1 | `8_guards: None` | **CONFIRMED, non-material.** Hardcoded literal in `_legs()`, never wired to the guards dict. Edge=False is unaffected (legs 1–6 all False; edge skipped None). Fixed in v5 candidate: leg 8 = both guards pass; edge requires every leg strictly True. |
+| D3 | G3 | Unfloored-only sensitivities/guards in the .md | **CONFIRMED as reporting gap.** Floored values EXIST in the JSON for every pass (E1h floored EVs −0.3596…−0.5278; November floored EVs/ CIs); the .md printed only unfloored for E1h/November/LODO/pooled. Now published in the revised-results addendum (§A1, §A6). |
+| D4 | G4 | Omitted raw p-values, sensitivity eff n, HGB Discovery EVs | **CONFIRMED as reporting gap, corrected in part.** Raw p_one [0.9993, 0.9164, 0.9297, 1.0, 1.0, 1.0, 0.9907, 1.0] → Holm adj all 1.0000; E1h/November eff n now published (addendum §A3, §A6). Frozen-policy Discovery EV −0.0654 was already in the .md; per-tp Discovery EVs live in `disc_oos.parquet` — R2 to quote. |
+| D5 | G5 | Audit omits `pumpfun_files_max_tsrel_gt60` | **CONFIRMED, minor.** Implied by `pumpfun_max_ts_rel_overall = 60.0` in v4. Fixed in v5 candidate (counter added to CELL3, emitted in CELL4 item 1). |
+| D6 | N-B1 | Merge §§3.6–3.8, §4, §5.6 not supplied in the brief | **DOWNGRADED — brief-packaging defect, not a results defect.** The merge exists on disk; the coordinator has now read §3.6/§3.7/§3.8/§4/§5.5/§5.6 verbatim and rules from them. R2 brief must quote the frozen sections verbatim. |
+| D7 | N-B2 | Audit PASS + results not independently reproducible / bound to v4 | **PARTLY CONFIRMED as reporting gap, corrected in part.** The .md quoted rounded tables, not full-precision aggregates; no run ID/hashes were in the brief. Corrected: full-precision aggregates now published in the revised addendum; run binding established from the kernel log (audit 20:02 UTC → results 20:09 UTC, single v4 run, notebook md5 687612aff8a…). Full reproduction = the v5 rerun; R2 checks the v5 candidate diff (verified here: exactly cells 2, 3, 4, 7 changed). |
+| D8 | N-B3 / P-B1 | Host scoring evidence unresolved (floor, §5.6) | **OUTSTANDING.** Parent-owned Evaluation-tab + starter-notebook-2 fetch (§5 item 6) still running in parallel. Cannot flip the bar (fails under both scorings) but is a §3.8 INCONCLUSIVE uncertainty; no verdict file before it lands. |
+| D9 | N-B4 / P-B5 | v3/v4 notebook diff unverified | **DOWNGRADED to MINOR.** v3 notebook file is NOT on disk (only v1 + v4), so the diff cannot be re-run locally. Corroborated instead: v4 cell 7 (CELL7) = 19,982 bytes exactly as the V4 repair record states; inserting `, flush=True` (12 bytes) at the single log call site reconstructs 19,994 = recorded v3 cell size; the only `flush` occurrence in the whole notebook is the `print` inside `log()` (cell 0); the v4 run's in-run audit PASS at 20:02 UTC self-validates the executed artifact. |
+| D10 | N-M2 / P-B6 | p4/p8 byte-identity unexplained (copy-bug suspicion) | **STRUCK.** Proved BY CONSTRUCTION: selected-tp distributions from the OOS CSVs — primary p8 {tp 3: 346}, p7 {10: 37, 5: 29, 3: 17}; November p8 {3: 81}, p7 {5: 28, 3: 13, 10: 8}. Nested flow triggers fire first at tp=3 and Discovery EV ordering is tp3 > tp5 > tp10. The underlying ask (publish selected-tp evidence) is satisfied in the addendum (§A5). |
+| D11 | P-B2 | Frozen calibration mismatch (tp=5 isotonic, tp=20 Platt, grid 20) | **STRUCK with prejudice.** The premise was NOT in the brief as pasted; the model web-searched and conflated the RE-RUN merge with the 60s merge. §3.6 verbatim: tp grid {3,5,10}, "tp > 20 banned". `frozen.json`: calibrators {3: isotonic, 5: platt, 10: platt} — the nested selection by logloss (tp3 isotonic 0.36107 < platt 0.36179; tp5 platt 0.19132 < isotonic 0.19489; tp10 platt 0.07212 < isotonic 0.07495). Executed config = frozen selection rule. R2 brief must quote §3.6 verbatim to prevent recurrence. |
+| D12 | P-B3 | Branch A audit PASS insufficiently supported (0.6667 vs 0.4476/0.4592 gap) | **STRUCK as a blocking defect; downgraded to MINOR doc defect.** The 0.6667 figure (4/6) is a 6-mint descriptive reference, never a target; the rule (fix-pass M27/M38) is STOP iff frac(m_i > 1, n1 ≥ 10) < 5%; kernel 44.76% (n1 ≥ 10) / 45.92% (n1 ≥ 100) → PASS is correct. Boundary masses at m_i = −1/59 and 99/59 are formula-implied. The real defect is minor: the audit file does not state the stop rule — corrected in the addendum (§A9). |
+| D13 | P-B4 | Guards leg unevaluated / ambiguously encoded | **CONFIRMED in part.** The guards WERE evaluated (values exist for all 8 policies, now published with definitions in the addendum §A8). Real defects: `8_guards: None` serialisation (D2) and the misleading `november_non_reversal` name — it is an EDGE leg (True only when November confirms a positive edge), not a "no reversal happened" indicator; for the five negative-November policies there is no reversal at all. Minor, non-material; fixed in v5 candidate. |
+| D14 | P-M8 | Holm + paired tests insufficiently reproducible | **CORRECTED.** Raw p_one + Holm adj (D4) and paired CIs now published: paired vs flow p1 −0.6842 [−1.0755, −0.3212], p2 −0.2462 [−0.5725, +0.1561], p3 −0.5467 [−0.9884, +0.2262], p7 −0.5053 [−0.8074, −0.0872]; policy-level (vs skip-all) CIs for all 8 (addendum §A4). |
+| D15 | P-M9 | November reversal assessment incomplete | **CORRECTED.** November-only CIs + p-values (addendum §A1) and the largest-winner decomposition (§A2) now published. No November positive is significant (p1 p=0.27, p3 p=0.094, p7 p=0.083); p4's November CI is entirely negative. Lottery-noise demonstrated trade-level: p3's +14.39 rests on one +8.70 hit + one +7.86 near-miss (without them −2.17); p7's +17.10 is 96.8% those same two trades. |
+| D16 | P-M10 | PMT availability 67.98% needs relevance assessment | **ADDRESSED, no action.** §3.5 M13 (frozen): a missing DIAGNOSTIC feature never triggers the skip fallback — HGB takes NaN natively, the flow rule's components abstain. Pmt is diagnostic, not a gate. Split variation (62.5% Discovery → 82.6% November) is a population property, not a defect. |
+
+## 3. FIXES APPLIED (from disk; see fix record for the table)
+
+- v5 candidate notebook built and verified:
+  `kernel_sixtysec/c109-first-60s-audit-build-v5-candidate.ipynb`,
+  md5 c4cb5363ef914f0c014e5c31ed0c0986, 107,749 bytes. Cell-md5 diff vs v4
+  shows exactly cells 2 (CELL2B, 55s fix), 3 (CELL3, pumpfun counter),
+  4 (CELL4, audit key), 7 (CELL7, 8_guards wiring) changed — nothing else.
+  nbformat.validate OK, all 9 cells compile. **v4 notebook restored
+  byte-identical (md5 687612aff8a…) — NOT pushed; push is the parent's call.**
+- Revised results file `SIXTY_SEC_RESULTS_REVISED_2026-11-19.md`: original
+  v4 results byte-identical + R1 addendum (§A1–§A12). No v4 number changed.
+- Original results file untouched.
+
+## 4. WHAT REMAINS OPEN FOR R2
+
+1. **§5.6 host evidence** (floor + "sustained" wording) — parent-owned fetch,
+   outstanding. R2 cannot sign off a verdict file without it.
+2. **v5 rerun** — the 55s sensitivity must be re-derived on Kaggle from the
+   v5 candidate (push decision is the parent's). R2 checks: feat55 eligible
+   > 0, 55s EVs per policy, and that all other numbers reproduce v4
+   bit-identically (the v5 diff touches only the four cells above).
+3. **R2 brief hygiene** — quote §3.6, §3.7, §3.8, §4, §5.6 verbatim in the
+   brief (D6, D11); include the full-precision `sixtysec_results.json`
+   aggregates (D7); state the Branch A stop rule (D12); state the bar
+   numbering mapping (addendum §A7).
+4. **R2 headline check** — re-rule §3.8 on the v5 numbers: does any candidate
+   gain a validated conservative bound excluding positive EV (NO EDGE), or
+   does CI-straddling persist (INCONCLUSIVE stands)? The scoped negative
+   findings for p1/p4/p5/p6/p8 are not re-openable on the v4 evidence.
+
+---
+
+## V5 RESULTS FILE (verbatim from kernel_sixtysec/outputs/v5/SIXTY_SEC_RESULTS_2026-11-18.md)
+
+# C109 First-60s Probe — Results (Kaggle kernel)
+Run: 2026-11-19 00:13 UTC. Kernel: rsaxena3011/c109-first-60s-audit-build.
+Audit PASS: True. Floor: UNRESOLVED — bar evaluated under BOTH floored and unfloored scorings.
+
+## Frozen selection (Discovery only)
+tau* = 0.0; calibrators = {'3': 'isotonic', '5': 'platt', '10': 'platt'}; flow thresholds = {'3': {'t14': 20, 't15': 1.0, 'tf': 0.5}, '5': {'t14': 20, 't15': 1.5, 'tf': 0.5}, '10': {'t14': 20, 't15': 1.5, 'tf': 0.5}}.
+Flow Discovery EV/trade: {'3': {'ev_hat': -0.552984399240216}, '5': {'ev_hat': -0.572941973082347}, '10': {'ev_hat': -0.6186636781756693}}.
+
+## Primary pass (E2h, Confirmation Oct 2–31) — per policy
+| policy | trades | EV/trade | 95% day-block CI | EV floored | CI floored | eff n | halves Oct2-16 / Oct17-31 | flat-0.40 | Holm adj p |
+|---|---|---|---|---|---|---|---|---|---|
+| p1_hgb_tp3 | 22 | -0.6842 | [-1.0755, -0.3212] | -0.4866 | [-0.8302, -0.1637] | 22.0000 | -0.8963 / -0.4722 | -0.7842 | 1.0000 |
+| p2_hgb_tp5 | 32 | -0.2745 | [-0.6253, 0.1423] | -0.1918 | [-0.5122, 0.2105] | 32.0000 | -0.3664 / 0.0540 | -0.3745 | 1.0000 |
+| p3_hgb_tp10 | 40 | -0.5467 | [-0.9884, 0.2262] | -0.3563 | [-0.7737, 0.3891] | 29.0026 | -0.9115 / 0.0614 | -0.6467 | 1.0000 |
+| p4_flow_tp3 | 346 | -0.6193 | [-0.7592, -0.4745] | -0.4504 | [-0.5771, -0.3178] | 224.5620 | -0.4988 / -0.7749 | -0.7193 | 1.0000 |
+| p5_flow_tp5 | 308 | -0.6360 | [-0.8145, -0.4427] | -0.4566 | [-0.6230, -0.2765] | 197.3193 | -0.5161 / -0.7896 | -0.7360 | 1.0000 |
+| p6_flow_tp10 | 308 | -0.7144 | [-0.8835, -0.5196] | -0.5278 | [-0.6853, -0.3488] | 254.5341 | -0.6737 / -0.7666 | -0.8144 | 1.0000 |
+| p7_hgb_multi | 83 | -0.5162 | [-0.8229, -0.0935] | -0.3578 | [-0.6431, 0.0435] | 57.1834 | -0.7027 / -0.2034 | -0.6162 | 1.0000 |
+| p8_flow_multi | 346 | -0.6193 | [-0.7592, -0.4745] | -0.4504 | [-0.5771, -0.3178] | 224.5620 | -0.4988 / -0.7749 | -0.7193 | 1.0000 |
+
+## Bar (§3.7) — per policy, both scorings
+- p1_hgb_tp3: unfloored edge=False {'1_ev_pos_and_ci_lower_pos': False, '2_both_halves_pos': False, '3_neff_ge_2500': False, '4_paired_pos': False, '5_flat040_pos': False, '6_holm_p_lt_05': False, '7_implementable': True, '8_guards': False}; floored edge=False {'1_ev_pos_and_ci_lower_pos': False, '2_both_halves_pos': False, '3_neff_ge_2500': False, '4_paired_pos': False, '5_flat040_pos': False, '6_holm_p_lt_05': False, '7_implementable': True, '8_guards': False}; guards={'november_trades': 15, 'november_ev': 0.26126007261604006, 'november_non_reversal': False, 'leave_one_day_out_ev': -0.7977673435850072, 'leave_one_day_out_pos': False, 'pooled_oct_nov_ci_lower': -0.7439487895730219}.
+- p2_hgb_tp5: unfloored edge=False {'1_ev_pos_and_ci_lower_pos': False, '2_both_halves_pos': False, '3_neff_ge_2500': False, '4_paired_pos': False, '5_flat040_pos': False, '6_holm_p_lt_05': False, '7_implementable': True, '8_guards': False}; floored edge=False {'1_ev_pos_and_ci_lower_pos': False, '2_both_halves_pos': False, '3_neff_ge_2500': False, '4_paired_pos': False, '5_flat040_pos': False, '6_holm_p_lt_05': False, '7_implementable': True, '8_guards': False}; guards={'november_trades': 30, 'november_ev': -0.08151467886471968, 'november_non_reversal': False, 'leave_one_day_out_ev': -0.40267465889615844, 'leave_one_day_out_pos': False, 'pooled_oct_nov_ci_lower': -0.42417351808501486}.
+- p3_hgb_tp10: unfloored edge=False {'1_ev_pos_and_ci_lower_pos': False, '2_both_halves_pos': False, '3_neff_ge_2500': False, '4_paired_pos': False, '5_flat040_pos': False, '6_holm_p_lt_05': False, '7_implementable': True, '8_guards': False}; floored edge=False {'1_ev_pos_and_ci_lower_pos': False, '2_both_halves_pos': False, '3_neff_ge_2500': False, '4_paired_pos': False, '5_flat040_pos': False, '6_holm_p_lt_05': False, '7_implementable': True, '8_guards': False}; guards={'november_trades': 13, 'november_ev': 1.1068601597296215, 'november_non_reversal': False, 'leave_one_day_out_ev': -0.8663008092773401, 'leave_one_day_out_pos': False, 'pooled_oct_nov_ci_lower': -0.7280776126284974}.
+- p4_flow_tp3: unfloored edge=False {'1_ev_pos_and_ci_lower_pos': False, '2_both_halves_pos': False, '3_neff_ge_2500': False, '4_paired_pos': False, '5_flat040_pos': False, '6_holm_p_lt_05': False, '7_implementable': True, '8_guards': False}; floored edge=False {'1_ev_pos_and_ci_lower_pos': False, '2_both_halves_pos': False, '3_neff_ge_2500': False, '4_paired_pos': False, '5_flat040_pos': False, '6_holm_p_lt_05': False, '7_implementable': True, '8_guards': False}; guards={'november_trades': 81, 'november_ev': -0.3200401850939121, 'november_non_reversal': False, 'leave_one_day_out_ev': -0.6460151536432229, 'leave_one_day_out_pos': False, 'pooled_oct_nov_ci_lower': -0.6845800399170269}.
+- p5_flow_tp5: unfloored edge=False {'1_ev_pos_and_ci_lower_pos': False, '2_both_halves_pos': False, '3_neff_ge_2500': False, '4_paired_pos': False, '5_flat040_pos': False, '6_holm_p_lt_05': False, '7_implementable': True, '8_guards': False}; floored edge=False {'1_ev_pos_and_ci_lower_pos': False, '2_both_halves_pos': False, '3_neff_ge_2500': False, '4_paired_pos': False, '5_flat040_pos': False, '6_holm_p_lt_05': False, '7_implementable': True, '8_guards': False}; guards={'november_trades': 75, 'november_ev': -0.30193690663091094, 'november_non_reversal': False, 'leave_one_day_out_ev': -0.6833102306349457, 'leave_one_day_out_pos': False, 'pooled_oct_nov_ci_lower': -0.7237988125355813}.
+- p6_flow_tp10: unfloored edge=False {'1_ev_pos_and_ci_lower_pos': False, '2_both_halves_pos': False, '3_neff_ge_2500': False, '4_paired_pos': False, '5_flat040_pos': False, '6_holm_p_lt_05': False, '7_implementable': True, '8_guards': False}; floored edge=False {'1_ev_pos_and_ci_lower_pos': False, '2_both_halves_pos': False, '3_neff_ge_2500': False, '4_paired_pos': False, '5_flat040_pos': False, '6_holm_p_lt_05': False, '7_implementable': True, '8_guards': False}; guards={'november_trades': 75, 'november_ev': -0.2831383253401537, 'november_non_reversal': False, 'leave_one_day_out_ev': -0.7704478888983793, 'leave_one_day_out_pos': False, 'pooled_oct_nov_ci_lower': -0.7860557933191551}.
+- p7_hgb_multi: unfloored edge=False {'1_ev_pos_and_ci_lower_pos': False, '2_both_halves_pos': False, '3_neff_ge_2500': False, '4_paired_pos': False, '5_flat040_pos': False, '6_holm_p_lt_05': False, '7_implementable': True, '8_guards': False}; floored edge=False {'1_ev_pos_and_ci_lower_pos': False, '2_both_halves_pos': False, '3_neff_ge_2500': False, '4_paired_pos': False, '5_flat040_pos': False, '6_holm_p_lt_05': False, '7_implementable': True, '8_guards': False}; guards={'november_trades': 49, 'november_ev': 0.34903474595086637, 'november_non_reversal': False, 'leave_one_day_out_ev': -0.6827756731343698, 'leave_one_day_out_pos': False, 'pooled_oct_nov_ci_lower': -0.5004815980728807}.
+- p8_flow_multi: unfloored edge=False {'1_ev_pos_and_ci_lower_pos': False, '2_both_halves_pos': False, '3_neff_ge_2500': False, '4_paired_pos': False, '5_flat040_pos': False, '6_holm_p_lt_05': False, '7_implementable': True, '8_guards': False}; floored edge=False {'1_ev_pos_and_ci_lower_pos': False, '2_both_halves_pos': False, '3_neff_ge_2500': False, '4_paired_pos': False, '5_flat040_pos': False, '6_holm_p_lt_05': False, '7_implementable': True, '8_guards': False}; guards={'november_trades': 81, 'november_ev': -0.3200401850939121, 'november_non_reversal': False, 'leave_one_day_out_ev': -0.6460151536432229, 'leave_one_day_out_pos': False, 'pooled_oct_nov_ci_lower': -0.6845800399170269}.
+
+## Guards and sensitivities
+- E1h_sensitivity: n_oos_rows=16213, EV/trade by policy={'p1_hgb_tp3': -0.49029060477611947, 'p2_hgb_tp5': -0.6166092861465633, 'p3_hgb_tp10': -0.5480279829375871, 'p4_flow_tp3': -0.6193364130351351, 'p5_flow_tp5': -0.6359791419874249, 'p6_flow_tp10': -0.7144054078179137, 'p7_hgb_multi': -0.5490705015833205, 'p8_flow_multi': -0.6193364130351351}.
+- November_E2h: n_oos_rows=5980, EV/trade by policy={'p1_hgb_tp3': 0.26126007261604006, 'p2_hgb_tp5': -0.08151467886471968, 'p3_hgb_tp10': 1.1068601597296215, 'p4_flow_tp3': -0.3200401850939121, 'p5_flow_tp5': -0.30193690663091094, 'p6_flow_tp10': -0.2831383253401537, 'p7_hgb_multi': 0.34903474595086637, 'p8_flow_multi': -0.3200401850939121}.
+- 55s_E2h: n_oos_rows=16213, EV/trade by policy={'p1_hgb_tp3': -0.45883661646442103, 'p2_hgb_tp5': -0.6974172080484752, 'p3_hgb_tp10': -0.7638372660891275, 'p4_flow_tp3': -0.534747556131075, 'p5_flow_tp5': -0.5591042755626953, 'p6_flow_tp10': -0.6429872874486962, 'p7_hgb_multi': -0.650391470990734, 'p8_flow_multi': -0.534747556131075}.
+Self-test (prediction side, §3.2): {'status': 'PASS', 'day': '2026-10-02', 'mint': '2mTAy2ovMFtfgNBPqJ9yMsiujFdwH71xS3xAUEq5pump', 'ev_hat_by_tp': {'3': -0.12129826571506874, '5': -0.23250903487934516, '10': 0.4771777583719627}, 'recorded_EV_hat_best': 0.4771777583719627}.
+
+## Coverage (feat60)
+Rows: 47031; eligible: 47031; labelled eligible: 47031; p60 valid: 47031; degenerate p60: 0.
+## Verdict status
+No verdict is claimed in this file. The verdict file is written after the §12 kernel audit passes AND two hostile review rounds pass.
+
+---
+
+## V5 KERNEL AUDIT FILE (verbatim from kernel_sixtysec/outputs/v5/SIXTY_SEC_KERNEL_AUDIT_2026-11-18.md)
+
+# C109 First-60s Probe — §12 Kernel Audit (Kaggle)
+
+Kernel: rsaxena3011/c109-first-60s-audit-build. Run: 2026-11-19 00:03 UTC.
+**AUDIT_PASS = True** (gating items 1, 2, 3, 5, 6; items 4 and 7 report-only).
+
+## Item 1_file_inventory: PASS
+
+```json
+{
+  "n_pumpswap_files": 89,
+  "n_pumpfun_files": 89,
+  "pumpswap_schema_fingerprints": [
+    "25b435a9ada6e190"
+  ],
+  "pumpfun_schema_fingerprints": [
+    "b273c4e36c7c197b"
+  ],
+  "pumpswap_n_cols": 56,
+  "pumpswap_max_ts_rel_overall": 60.0,
+  "pumpswap_files_max_tsrel_gt60": 0,
+  "pumpfun_max_ts_rel_overall": 60.0,
+  "pumpfun_files_max_tsrel_gt60": 0,
+  "pumpswap_rows_read": 22435025,
+  "pumpfun_rows_read": 59214971,
+  "pumpswap_dup_removed": 0,
+  "pumpfun_dup_removed": 4,
+  "quote_token_unique": [
+    "So11111111111111111111111111111111111111112"
+  ]
+}
+```
+
+## Item 2_test_join_november: PASS
+
+```json
+{
+  "n_test_mints": 409,
+  "test_valid_snapshot_cov_nrows_ge1": 1.0,
+  "test_p60_valid_cov": 1.0,
+  "test_mints_max_tsrel_gt60": 0,
+  "november_labelled_mints": 5980,
+  "november_cov_by_day": {
+    "2026-11-01": 1.0,
+    "2026-11-02": 1.0,
+    "2026-11-03": 1.0,
+    "2026-11-04": 1.0,
+    "2026-11-05": 1.0,
+    "2026-11-06": 1.0,
+    "2026-11-07": 1.0,
+    "2026-11-08": 1.0,
+    "2026-11-09": 1.0,
+    "2026-11-10": 1.0,
+    "2026-11-11": 1.0,
+    "2026-11-12": 1.0,
+    "2026-11-13": 1.0,
+    "2026-11-14": 1.0,
+    "2026-11-15": 1.0,
+    "2026-11-16": 1.0
+  },
+  "november_cov_min": 1.0
+}
+```
+
+## Item 3_branchA_scale: PASS
+
+```json
+{
+  "n_labelled": 47031,
+  "n_n1_ge10": 47030,
+  "n_n1_ge100": 44511,
+  "frac_mi_gt1_n1_ge10": 0.44760790984477994,
+  "frac_mi_gt1_n1_ge100": 0.45923479589315,
+  "thin_window_share_1_le_n1_lt10": 2.1262571495396654e-05,
+  "no_amm_share_n1_eq0": 0.0,
+  "contra_frac_maxx_ge_m060_over_pmt": 0.40654036699198404,
+  "m_i_quantiles": {
+    "p0": -0.01694915254237288,
+    "p5": -0.01694915254237288,
+    "p25": -0.01694915254237288,
+    "p50": 0.44976664210267747,
+    "p75": 1.6725682824139048,
+    "p95": 1.6779661016949152,
+    "p100": 1.6779661016949152
+  },
+  "implied_hour_trades_100a_quantiles": {
+    "p0": 0.0,
+    "p5": 0.0,
+    "p25": 0.0,
+    "p50": 8000.0,
+    "p75": 34300.0,
+    "p95": 84300.0,
+    "p100": 1120800.0
+  },
+  "sample_reference_m_i": [
+    1.6701,
+    1.6754,
+    1.6757,
+    1.6645
+  ],
+  "sample_reference_frac": 0.6666666666666666,
+  "limiting_99_over_59": 1.6779661016949152
+}
+```
+
+## Item 4_pmt_availability: REPORT-ONLY
+
+```json
+{
+  "pmt_measurable_rate_labelled": 0.679764410707831,
+  "pmt_measurable_rate_by_split": {
+    "confirmation": 0.7101091716523777,
+    "discovery": 0.6247684998792173,
+    "november": 0.8259197324414715
+  },
+  "pmt_multi_file_mints": 0
+}
+```
+
+## Item 5_timing: PASS
+
+```json
+{
+  "pumpswap_scan_s": 1001.5,
+  "pumpfun_scan_s": 401.8,
+  "hgb_pilot_fit_s_mean": 0.23,
+  "n_fits_projected": 174,
+  "ml_projected_kaggle_s": 47.7,
+  "projected_total_kaggle_s": 1631.0,
+  "projected_dedicated_s": 434.9,
+  "bar_dedicated_s": 1800.0,
+  "conversion_kaggle_to_dedicated": 3.75,
+  "peak_rss_gb": 4.71
+}
+```
+
+## Item 6_p60_coverage_universe: PASS
+
+```json
+{
+  "p60_cov_by_split": {
+    "discovery": 1.0,
+    "confirmation": 1.0,
+    "november": 1.0
+  },
+  "nrows_ge1_cov_by_split": {
+    "discovery": 1.0,
+    "confirmation": 1.0,
+    "november": 1.0
+  },
+  "conf_minus_disc_p60_pp": 0.0,
+  "conf_minus_disc_n1_pp": 0.0,
+  "n_rows_incl0_quantiles_labelled": {
+    "p0": 5.0,
+    "p5": 98.0,
+    "p25": 205.0,
+    "p50": 377.0,
+    "p75": 611.0,
+    "p95": 1139.0,
+    "p100": 11212.0
+  },
+  "universe_ge100_rate_by_split": {
+    "discovery": 1.0,
+    "confirmation": 1.0,
+    "november": 1.0
+  },
+  "universe_ge100_rate_overall": 1.0,
+  "n_trades_universe_quantiles": {
+    "p0": 100.0,
+    "p5": 123.0,
+    "p25": 300.0,
+    "p50": 633.0,
+    "p75": 1665.0,
+    "p95": 3481.0,
+    "p100": 76177.0
+  }
+}
+```
+
+## Item 7_p60_file_vs_ts_order: REPORT-ONLY
+
+```json
+{
+  "n_compared": 47031,
+  "frac_file_ne_ts_order": 0.0,
+  "n_diff": 0
+}
+```
+
+## Gate
+
+All gating items PASS. The build (CELL 5+) proceeds.
+
+---
+
+## REVISED RESULTS — v4 results byte-identical + R1 addendum §A1–§A12 (verbatim from SIXTY_SEC_RESULTS_REVISED_2026-11-19.md)
+
+# C109 First-60s Probe — Results (Kaggle kernel)
+Run: 2026-11-18 20:09 UTC. Kernel: rsaxena3011/c109-first-60s-audit-build.
+Audit PASS: True. Floor: UNRESOLVED — bar evaluated under BOTH floored and unfloored scorings.
+
+## Frozen selection (Discovery only)
+tau* = 0.0; calibrators = {'3': 'isotonic', '5': 'platt', '10': 'platt'}; flow thresholds = {'3': {'t14': 20, 't15': 1.0, 'tf': 0.5}, '5': {'t14': 20, 't15': 1.5, 'tf': 0.5}, '10': {'t14': 20, 't15': 1.5, 'tf': 0.5}}.
+Flow Discovery EV/trade: {'3': {'ev_hat': -0.552984399240216}, '5': {'ev_hat': -0.572941973082347}, '10': {'ev_hat': -0.6186636781756693}}.
+
+## Primary pass (E2h, Confirmation Oct 2–31) — per policy
+| policy | trades | EV/trade | 95% day-block CI | EV floored | CI floored | eff n | halves Oct2-16 / Oct17-31 | flat-0.40 | Holm adj p |
+|---|---|---|---|---|---|---|---|---|---|
+| p1_hgb_tp3 | 22 | -0.6842 | [-1.0755, -0.3212] | -0.4866 | [-0.8302, -0.1637] | 22.0000 | -0.8963 / -0.4722 | -0.7842 | 1.0000 |
+| p2_hgb_tp5 | 32 | -0.2745 | [-0.6253, 0.1423] | -0.1918 | [-0.5122, 0.2105] | 32.0000 | -0.3664 / 0.0540 | -0.3745 | 1.0000 |
+| p3_hgb_tp10 | 40 | -0.5467 | [-0.9884, 0.2262] | -0.3563 | [-0.7737, 0.3891] | 29.0026 | -0.9115 / 0.0614 | -0.6467 | 1.0000 |
+| p4_flow_tp3 | 346 | -0.6193 | [-0.7592, -0.4745] | -0.4504 | [-0.5771, -0.3178] | 224.5620 | -0.4988 / -0.7749 | -0.7193 | 1.0000 |
+| p5_flow_tp5 | 308 | -0.6360 | [-0.8145, -0.4427] | -0.4566 | [-0.6230, -0.2765] | 197.3193 | -0.5161 / -0.7896 | -0.7360 | 1.0000 |
+| p6_flow_tp10 | 308 | -0.7144 | [-0.8835, -0.5196] | -0.5278 | [-0.6853, -0.3488] | 254.5341 | -0.6737 / -0.7666 | -0.8144 | 1.0000 |
+| p7_hgb_multi | 83 | -0.5162 | [-0.8229, -0.0935] | -0.3578 | [-0.6431, 0.0435] | 57.1834 | -0.7027 / -0.2034 | -0.6162 | 1.0000 |
+| p8_flow_multi | 346 | -0.6193 | [-0.7592, -0.4745] | -0.4504 | [-0.5771, -0.3178] | 224.5620 | -0.4988 / -0.7749 | -0.7193 | 1.0000 |
+
+## Bar (§3.7) — per policy, both scorings
+- p1_hgb_tp3: unfloored edge=False {'1_ev_pos_and_ci_lower_pos': False, '2_both_halves_pos': False, '3_neff_ge_2500': False, '4_paired_pos': False, '5_flat040_pos': False, '6_holm_p_lt_05': False, '7_implementable': True, '8_guards': None}; floored edge=False {'1_ev_pos_and_ci_lower_pos': False, '2_both_halves_pos': False, '3_neff_ge_2500': False, '4_paired_pos': False, '5_flat040_pos': False, '6_holm_p_lt_05': False, '7_implementable': True, '8_guards': None}; guards={'november_trades': 15, 'november_ev': 0.26126007261604006, 'november_non_reversal': False, 'leave_one_day_out_ev': -0.7977673435850072, 'leave_one_day_out_pos': False, 'pooled_oct_nov_ci_lower': -0.7439487895730219}.
+- p2_hgb_tp5: unfloored edge=False {'1_ev_pos_and_ci_lower_pos': False, '2_both_halves_pos': False, '3_neff_ge_2500': False, '4_paired_pos': False, '5_flat040_pos': False, '6_holm_p_lt_05': False, '7_implementable': True, '8_guards': None}; floored edge=False {'1_ev_pos_and_ci_lower_pos': False, '2_both_halves_pos': False, '3_neff_ge_2500': False, '4_paired_pos': False, '5_flat040_pos': False, '6_holm_p_lt_05': False, '7_implementable': True, '8_guards': None}; guards={'november_trades': 30, 'november_ev': -0.08151467886471968, 'november_non_reversal': False, 'leave_one_day_out_ev': -0.40267465889615844, 'leave_one_day_out_pos': False, 'pooled_oct_nov_ci_lower': -0.42417351808501486}.
+- p3_hgb_tp10: unfloored edge=False {'1_ev_pos_and_ci_lower_pos': False, '2_both_halves_pos': False, '3_neff_ge_2500': False, '4_paired_pos': False, '5_flat040_pos': False, '6_holm_p_lt_05': False, '7_implementable': True, '8_guards': None}; floored edge=False {'1_ev_pos_and_ci_lower_pos': False, '2_both_halves_pos': False, '3_neff_ge_2500': False, '4_paired_pos': False, '5_flat040_pos': False, '6_holm_p_lt_05': False, '7_implementable': True, '8_guards': None}; guards={'november_trades': 13, 'november_ev': 1.1068601597296215, 'november_non_reversal': False, 'leave_one_day_out_ev': -0.8663008092773401, 'leave_one_day_out_pos': False, 'pooled_oct_nov_ci_lower': -0.7280776126284974}.
+- p4_flow_tp3: unfloored edge=False {'1_ev_pos_and_ci_lower_pos': False, '2_both_halves_pos': False, '3_neff_ge_2500': False, '4_paired_pos': False, '5_flat040_pos': False, '6_holm_p_lt_05': False, '7_implementable': True, '8_guards': None}; floored edge=False {'1_ev_pos_and_ci_lower_pos': False, '2_both_halves_pos': False, '3_neff_ge_2500': False, '4_paired_pos': False, '5_flat040_pos': False, '6_holm_p_lt_05': False, '7_implementable': True, '8_guards': None}; guards={'november_trades': 81, 'november_ev': -0.3200401850939121, 'november_non_reversal': False, 'leave_one_day_out_ev': -0.6460151536432229, 'leave_one_day_out_pos': False, 'pooled_oct_nov_ci_lower': -0.6845800399170269}.
+- p5_flow_tp5: unfloored edge=False {'1_ev_pos_and_ci_lower_pos': False, '2_both_halves_pos': False, '3_neff_ge_2500': False, '4_paired_pos': False, '5_flat040_pos': False, '6_holm_p_lt_05': False, '7_implementable': True, '8_guards': None}; floored edge=False {'1_ev_pos_and_ci_lower_pos': False, '2_both_halves_pos': False, '3_neff_ge_2500': False, '4_paired_pos': False, '5_flat040_pos': False, '6_holm_p_lt_05': False, '7_implementable': True, '8_guards': None}; guards={'november_trades': 75, 'november_ev': -0.30193690663091094, 'november_non_reversal': False, 'leave_one_day_out_ev': -0.6833102306349457, 'leave_one_day_out_pos': False, 'pooled_oct_nov_ci_lower': -0.7237988125355813}.
+- p6_flow_tp10: unfloored edge=False {'1_ev_pos_and_ci_lower_pos': False, '2_both_halves_pos': False, '3_neff_ge_2500': False, '4_paired_pos': False, '5_flat040_pos': False, '6_holm_p_lt_05': False, '7_implementable': True, '8_guards': None}; floored edge=False {'1_ev_pos_and_ci_lower_pos': False, '2_both_halves_pos': False, '3_neff_ge_2500': False, '4_paired_pos': False, '5_flat040_pos': False, '6_holm_p_lt_05': False, '7_implementable': True, '8_guards': None}; guards={'november_trades': 75, 'november_ev': -0.2831383253401537, 'november_non_reversal': False, 'leave_one_day_out_ev': -0.7704478888983793, 'leave_one_day_out_pos': False, 'pooled_oct_nov_ci_lower': -0.7860557933191551}.
+- p7_hgb_multi: unfloored edge=False {'1_ev_pos_and_ci_lower_pos': False, '2_both_halves_pos': False, '3_neff_ge_2500': False, '4_paired_pos': False, '5_flat040_pos': False, '6_holm_p_lt_05': False, '7_implementable': True, '8_guards': None}; floored edge=False {'1_ev_pos_and_ci_lower_pos': False, '2_both_halves_pos': False, '3_neff_ge_2500': False, '4_paired_pos': False, '5_flat040_pos': False, '6_holm_p_lt_05': False, '7_implementable': True, '8_guards': None}; guards={'november_trades': 49, 'november_ev': 0.34903474595086637, 'november_non_reversal': False, 'leave_one_day_out_ev': -0.6827756731343698, 'leave_one_day_out_pos': False, 'pooled_oct_nov_ci_lower': -0.5004815980728807}.
+- p8_flow_multi: unfloored edge=False {'1_ev_pos_and_ci_lower_pos': False, '2_both_halves_pos': False, '3_neff_ge_2500': False, '4_paired_pos': False, '5_flat040_pos': False, '6_holm_p_lt_05': False, '7_implementable': True, '8_guards': None}; floored edge=False {'1_ev_pos_and_ci_lower_pos': False, '2_both_halves_pos': False, '3_neff_ge_2500': False, '4_paired_pos': False, '5_flat040_pos': False, '6_holm_p_lt_05': False, '7_implementable': True, '8_guards': None}; guards={'november_trades': 81, 'november_ev': -0.3200401850939121, 'november_non_reversal': False, 'leave_one_day_out_ev': -0.6460151536432229, 'leave_one_day_out_pos': False, 'pooled_oct_nov_ci_lower': -0.6845800399170269}.
+
+## Guards and sensitivities
+- E1h_sensitivity: n_oos_rows=16213, EV/trade by policy={'p1_hgb_tp3': -0.49029060477611947, 'p2_hgb_tp5': -0.6166092861465633, 'p3_hgb_tp10': -0.5480279829375871, 'p4_flow_tp3': -0.6193364130351351, 'p5_flow_tp5': -0.6359791419874249, 'p6_flow_tp10': -0.7144054078179137, 'p7_hgb_multi': -0.5490705015833205, 'p8_flow_multi': -0.6193364130351351}.
+- November_E2h: n_oos_rows=5980, EV/trade by policy={'p1_hgb_tp3': 0.26126007261604006, 'p2_hgb_tp5': -0.08151467886471968, 'p3_hgb_tp10': 1.1068601597296215, 'p4_flow_tp3': -0.3200401850939121, 'p5_flow_tp5': -0.30193690663091094, 'p6_flow_tp10': -0.2831383253401537, 'p7_hgb_multi': 0.34903474595086637, 'p8_flow_multi': -0.3200401850939121}.
+- 55s_E2h: n_oos_rows=16213, EV/trade by policy={'p1_hgb_tp3': None, 'p2_hgb_tp5': None, 'p3_hgb_tp10': None, 'p4_flow_tp3': None, 'p5_flow_tp5': None, 'p6_flow_tp10': None, 'p7_hgb_multi': None, 'p8_flow_multi': None}.
+Self-test (prediction side, §3.2): {'status': 'PASS', 'day': '2026-10-02', 'mint': '2mTAy2ovMFtfgNBPqJ9yMsiujFdwH71xS3xAUEq5pump', 'ev_hat_by_tp': {'3': -0.12129826571506874, '5': -0.23250903487934516, '10': 0.4771777583719627}, 'recorded_EV_hat_best': 0.4771777583719627}.
+
+## Coverage (feat60)
+Rows: 47031; eligible: 47031; labelled eligible: 47031; p60 valid: 47031; degenerate p60: 0.
+## Verdict status
+No verdict is claimed in this file. The verdict file is written after the §12 kernel audit passes AND two hostile review rounds pass.
+
+---
+
+# R1 FIX-RECORD ADDENDUM (2026-11-19, merge/fix coordinator)
+
+No v4 number above was changed. This addendum publishes aggregates that existed
+only in `sixtysec_results.json` (full precision) and the OOS CSVs, corrects the
+record on the defects R1 raised, and records the v5 code fixes. Source for every
+value below: `kernel_sixtysec/outputs/sixtysec_results.json` and
+`sixtysec_oos_{primary,E1h,November_E2h}.csv`, recomputed in kaggle-venv.
+
+## A1. November-only uncertainty (was missing from the .md; now published)
+
+| policy | Nov trades | Nov EV/trade | 95% day-block CI | one-sided p (EV>0) | Nov EV floored | CI floored |
+|---|---|---|---|---|---|---|
+| p1_hgb_tp3 | 15 | +0.2613 | [-0.4381, +1.0295] | 0.2697 | +0.3581 | [-0.2998, +1.0769] |
+| p2_hgb_tp5 | 30 | -0.0815 | [-0.3836, +0.1537] | 0.7539 | -0.0616 | — |
+| p3_hgb_tp10 | 13 | +1.1069 | [-0.3970, +3.3003] | 0.0943 | +1.1975 | [-0.2605, +3.3411] |
+| p4_flow_tp3 | 81 | -0.3200 | [-0.5097, -0.0876] | 0.9952 | -0.1991 | — |
+| p5_flow_tp5 | 75 | -0.3019 | — | — | -0.1715 | — |
+| p6_flow_tp10 | 75 | -0.2831 | — | — | -0.1493 | — |
+| p7_hgb_multi | 49 | +0.3490 | [-0.1282, +1.0977] | 0.0832 | +0.4028 | [-0.0641, +1.1549] |
+| p8_flow_multi | 81 | -0.3200 | — | — | -0.1991 | — |
+
+No November positive is significant at 0.05 (p1 0.27, p3 0.094, p7 0.083).
+p4's November EV is significantly negative (CI entirely below zero).
+
+## A2. November largest-winner decomposition (lottery-noise test, trade-level)
+
+- p1 (15 trades, total +3.9189, 6 hits): top-1 winner +1.70 = 43.4% of the total.
+- p3 (13 trades, total +14.3892, 1 hit): the single hit is +8.70 (final_x 9.16)
+  = 60.5% of the total; top-2 (the +8.70 hit + a +7.86 near-miss, final_x 8.36)
+  sum to +16.56, above the total — without those two trades the total is −2.17.
+- p7 (49 trades, total +17.10): the same two trades = +16.56 = 96.8% of the
+  total; without them the total is +0.54 (EV/trade +0.0110).
+- Conclusion: the November positives are carried by one or two lottery trades,
+  not by a broad edge. The same +8.70 hit is the largest November winner for
+  p1, p3 and p7 alike.
+
+## A3. Raw one-sided p-values + Holm (primary, Confirmation)
+
+Raw p_one (H0: EV ≤ 0, day-block bootstrap): p1 0.9993, p2 0.9164, p3 0.9297,
+p4 1.0, p5 1.0, p6 1.0, p7 0.9907, p8 1.0. Holm-adjusted: 1.0000 for all 8.
+The "1.0000" in the table above is the Holm adjustment of these raw values.
+
+## A4. Paired comparisons (primary, Confirmation)
+
+Paired vs the simple flow rule (HGB policies only; flow policies have no
+paired-vs-flow comparator by construction):
+p1 −0.6842 CI [−1.0755, −0.3212]; p2 −0.2462 CI [−0.5725, +0.1561];
+p3 −0.5467 CI [−0.9884, +0.2262]; p7 −0.5053 CI [−0.8074, −0.0872].
+Paired vs skip-all, i.e. policy-level day-block PnL (EV per eligible token):
+p1 [−0.0015, −0.0004], p2 [−0.0012, +0.0002], p3 [−0.0031, +0.0005],
+p4 [−0.0177, −0.0094], p5 [−0.0168, −0.0077], p6 [−0.0180, −0.0093],
+p7 [−0.0046, −0.0005], p8 [−0.0177, −0.0094]. Bar leg 4 for the flow
+policies falls back to this policy-level CI (upper bound ≤ 0 for all four).
+
+## A5. Selected-tp distributions (p4/p8 identity, by construction)
+
+Primary (Confirmation): p7 {tp 10: 37, tp 5: 29, tp 3: 17}; p8 {tp 3: 346}.
+November: p7 {tp 5: 28, tp 3: 13, tp 10: 8}; p8 {tp 3: 81}.
+p8 selects tp=3 on every trade because the nested flow triggers fire first
+at tp=3 and Discovery EV ordering is tp3 > tp5 > tp10 — the identity is
+construction, not a copy bug. p7 genuinely splits across tp.
+
+## A6. E1h floored EVs (were in the JSON, not the .md)
+
+p1 −0.3596, p2 −0.5198, p3 −0.3444, p4 −0.4504, p5 −0.4566, p6 −0.5278,
+p7 −0.3877, p8 −0.4504. E1h eff n: p1 18, p2 30, p3 40, p4 224.56,
+p5 197.32, p6 254.53, p7 74, p8 224.56. November eff n: p1 12.21, p2 30,
+p3 12.73, p4 81, p5 75, p6 75, p7 40.18, p8 81.
+
+## A7. Bar numbering mapping (§3.7 → code dict keys)
+
+Code key 1 (`1_ev_pos_and_ci_lower_pos`) = §3.7 legs 1+2 combined (EV > 0 AND
+CI lower > 0); key 2 = §3.7 leg 3 (both halves +); key 3 = §3.7 leg 4
+(n_eff ≥ 2,500); key 4 = §3.7 leg 5 (paired); key 5 = §3.7 leg 6 (flat-0.40);
+key 6 = §3.7 leg 7 (Holm); key 7 = §3.7 leg 8 (implementable); key 8
+(`8_guards`) = the guards block (November non-reversal + leave-one-day-out).
+The numbering shift is cosmetic; the legs themselves are all evaluated.
+
+## A8. Guard definitions (verbatim from `build_cells.py`)
+
+- `november_non_reversal` = (November EV > 0) AND (pooled Oct+Nov 95% day-block
+  CI lower bound > 0). It is an EDGE leg: it is True only when November
+  confirms a positive edge. It is False for all 8 policies (pooled CI lower is
+  negative for all 8). For the five policies with negative November EV
+  (p2, p4, p5, p6, p8) there is no reversal at all — the name is misleading,
+  the value is correct as an edge condition.
+- `leave_one_day_out_pos` = Confirmation EV/trade stays > 0 after dropping the
+  single best day. False for all 8 (leave-one-day-out EVs: p1 −0.7978,
+  p2 −0.4027, p3 −0.8663, p4 −0.6460, p5 −0.6833, p6 −0.7704, p7 −0.6828,
+  p8 −0.6460).
+- `8_guards` was serialised as None (hardcoded literal, never wired to the
+  guards dict). Non-material to edge=False (legs 1–6 are all False; the edge
+  computation skipped None). Fixed in the v5 candidate: leg 8 = both guards
+  pass, and edge requires every leg strictly True (an unevaluated leg can
+  never pass).
+
+## A9. Branch A acceptance rule (audit item 3)
+
+Fix-pass rule M27/M38: STOP iff the fraction with m_i > 1 (over labelled
+mints with n1_i ≥ 10; m_i = (100·a_i − n1_i) / (59·n1_i)) is < 5%.
+Kernel: 44.76% (n1 ≥ 10) / 45.92% (n1 ≥ 100) — STOP does not fire, PASS is
+correct. The 0.6667 figure (4/6) is a 6-mint descriptive reference from the
+pre-build sample, never a target; comparing it to the 47,030-mint kernel
+fraction is a category error. Boundary masses at m_i = −1/59 (a_i = 0) and
+99/59 (a_i = n1) are formula-implied. The audit file's omission of the rule
+statement is a minor documentation defect, corrected here.
+
+## A10. 55s sensitivity — BUG, result withdrawn pending v5 rerun
+
+`55s_E2h: all None` is NOT a finding. Root cause (code + data, verified):
+`finalize_acc` in `build_sixtysec.py` (CELL2B) sets `f["p60"] = np.nan`
+unconditionally in the w=55 branch, despite its own comment ("P60 stays the
+60s last row (from feat_ps)"); `assemble()` gates eligibility on finite p60.
+feat55: 47,031 rows, n_rows > 0 for every mint, p60 finite = 0, eligible = 0
+(kernel log: "feat55 rows 47031 | eligible 0 | p60 valid 0").
+Fix (v5 candidate): copy `feat_ps[mint]["p60"]` (+ `p60_degen`) in the w=55
+branch. The 55s result stays None until the v5 kernel reruns; no conclusion
+about the 55s window may be drawn from v4.
+
+## A11. Floor / §5.6 — OUTSTANDING
+
+The Evaluation-tab + starter-notebook-2 evidence fetch (merge §5 item 6,
+parent-owned) is still outstanding. The floor is bracketed: the bar fails
+under BOTH scorings, so the floor cannot flip the bar outcome — but §3.8
+lists "unresolved payoff reconstruction" as an INCONCLUSIVE uncertainty, so
+the floor remains an open item for R2 and no verdict file may be written
+before it lands.
+
+## A12. Merged headline (R1 merge, 2026-11-19)
+
+**INCONCLUSIVE, narrowly scoped.** §3.8's NO EDGE clause requires "a
+validated conservative bound excludes positive EV" where the negative is
+claimed; for the strongest candidates p2 (EV −0.2745, CI [−0.6253, +0.1423])
+and p3 (CI upper +0.2262) no such bound exists, and §3.8's INCONCLUSIVE
+clause names "CI straddling 0" as a call-preventing uncertainty. Scoped
+negative findings stand: flow policies p4/p5/p6/p8 and p1 have CIs entirely
+below zero under both scorings. v1 skip-all stands under either headline.
+
+---
+
+## V5 sixtysec_results.json — FULL PRECISION (verbatim from kernel_sixtysec/outputs/v5/sixtysec_results.json)
+
+{
+ "passes": {
+  "E2h_primary": {
+   "aggregates": {
+    "p1_hgb_tp3": {
+     "tag": "E2h_primary",
+     "policy": "p1_hgb_tp3",
+     "trades": 22,
+     "eligible_tokens": 16213,
+     "days": 30,
+     "ev": -0.6842324643311433,
+     "total": -15.053114215285152,
+     "ev_floored": -0.4865587530698072,
+     "total_floored": -10.70429256753576,
+     "ci": [
+      -1.0755020258147268,
+      -0.321218789967915
+     ],
+     "ci_floored": [
+      -0.8301595331792775,
+      -0.16369727449050395
+     ],
+     "p_one": 0.9993000699930007,
+     "p_two": 0.0015998400159984002,
+     "p_one_floored": 0.9969003099690031,
+     "de": 0.7137515070676388,
+     "eff_n": 22.0,
+     "halves": {
+      "Oct2_16": {
+       "trades": 11,
+       "ev": -0.8962729582266348
+      },
+      "Oct17_31": {
+       "trades": 11,
+       "ev": -0.47219197043565175
+      }
+     },
+     "policy_level_ev_per_eligible_token": -0.0009284595210809318,
+     "policy_level_ci": [
+      -0.0015047036018601306,
+      -0.0003751527782055222
+     ],
+     "policy_level_p_one": 0.9991000899910009,
+     "paired_vs_flow": {
+      "mean_diff": -0.6842324643311433,
+      "ci": [
+       -1.0755020258147268,
+       -0.321218789967915
+      ],
+      "p_one": 0.9993000699930007,
+      "p_two": 0.0015998400159984002
+     },
+     "stress_c04_ev": -0.7842324643311432,
+     "stress_c04_ev_floored": -0.5183769348879891,
+     "realfee_ev": -0.4092324643311432,
+     "sens_plus0015_ev": -0.6992324643311433,
+     "sens_plus005_ev": -0.7342324643311433,
+     "sens_plus010_ev": -0.7842324643311432,
+     "concentration": {
+      "n_positive": 3,
+      "total_positive": 5.1,
+      "top1_share": 0.33333333333333337,
+      "top5_share": 1.0,
+      "top10_share": 1.0,
+      "best_day": "2026-10-20",
+      "worst_day": "2026-10-07",
+      "leave_best_day_out_ev": -0.7977673435850072,
+      "leave_worst_day_out_ev": -0.6235641662271718,
+      "leave_one_day_out_ev": -0.7977673435850072
+     }
+    },
+    "p2_hgb_tp5": {
+     "tag": "E2h_primary",
+     "policy": "p2_hgb_tp5",
+     "trades": 32,
+     "eligible_tokens": 16213,
+     "days": 30,
+     "ev": -0.2744660758056535,
+     "total": -8.782914425780913,
+     "ev_floored": -0.19179862051539986,
+     "total_floored": -6.137555856492796,
+     "ci": [
+      -0.6252774257585876,
+      0.14231034339672366
+     ],
+     "ci_floored": [
+      -0.5121760854081562,
+      0.2105119473429143
+     ],
+     "p_one": 0.9164083591640836,
+     "p_two": 0.1673832616738326,
+     "p_one_floored": 0.8534146585341466,
+     "de": 0.8652002951393444,
+     "eff_n": 32.0,
+     "halves": {
+      "Oct2_16": {
+       "trades": 25,
+       "ev": -0.3664368232498621
+      },
+      "Oct17_31": {
+       "trades": 7,
+       "ev": 0.05400087935223425
+      }
+     },
+     "policy_level_ev_per_eligible_token": -0.0005417204974884915,
+     "policy_level_ci": [
+      -0.0012470365481870604,
+      0.0002498592864186659
+     ],
+     "policy_level_p_one": 0.913008699130087,
+     "paired_vs_flow": {
+      "mean_diff": -0.24621562747465398,
+      "ci": [
+       -0.5724904723511712,
+       0.15610622341636848
+      ],
+      "p_one": 0.9061093890610938,
+      "p_two": 0.18798120187981202
+     },
+     "stress_c04_ev": -0.3744660758056536,
+     "stress_c04_ev_floored": -0.26354817218440035,
+     "realfee_ev": 0.0005339241943464815,
+     "sens_plus0015_ev": -0.28946607580565353,
+     "sens_plus005_ev": -0.3244660758056535,
+     "sens_plus010_ev": -0.3744660758056535,
+     "concentration": {
+      "n_positive": 4,
+      "total_positive": 8.285295138666982,
+      "top1_share": 0.4465743148644542,
+      "top5_share": 1.0,
+      "top10_share": 1.0,
+      "best_day": "2026-10-22",
+      "worst_day": "2026-10-07",
+      "leave_best_day_out_ev": -0.40267465889615844,
+      "leave_worst_day_out_ev": -0.1826390826412186,
+      "leave_one_day_out_ev": -0.40267465889615844
+     }
+    },
+    "p3_hgb_tp10": {
+     "tag": "E2h_primary",
+     "policy": "p3_hgb_tp10",
+     "trades": 40,
+     "eligible_tokens": 16213,
+     "days": 30,
+     "ev": -0.546654988356055,
+     "total": -21.8661995342422,
+     "ev_floored": -0.3562736104311489,
+     "total_floored": -14.250944417245957,
+     "ci": [
+      -0.9884185262485811,
+      0.22615556661176028
+     ],
+     "ci_floored": [
+      -0.7736501201453339,
+      0.3890547419258446
+     ],
+     "p_one": 0.9297070292970703,
+     "p_two": 0.14078592140785923,
+     "p_one_floored": 0.8620137986201379,
+     "de": 1.3791870233072103,
+     "eff_n": 29.002593066807083,
+     "halves": {
+      "Oct2_16": {
+       "trades": 25,
+       "ev": -0.9114601373716192
+      },
+      "Oct17_31": {
+       "trades": 15,
+       "ev": 0.061353593336551944
+      }
+     },
+     "policy_level_ev_per_eligible_token": -0.0013486831267650774,
+     "policy_level_ci": [
+      -0.0030758198176386044,
+      0.0004989595328751462
+     ],
+     "policy_level_p_one": 0.9281071892810719,
+     "paired_vs_flow": {
+      "mean_diff": -0.546654988356055,
+      "ci": [
+       -0.9884185262485811,
+       0.22615556661176028
+      ],
+      "p_one": 0.9297070292970703,
+      "p_two": 0.14078592140785923
+     },
+     "stress_c04_ev": -0.646654988356055,
+     "stress_c04_ev_floored": -0.39127361043114894,
+     "realfee_ev": -0.27165498835605495,
+     "sens_plus0015_ev": -0.561654988356055,
+     "sens_plus005_ev": -0.596654988356055,
+     "sens_plus010_ev": -0.646654988356055,
+     "concentration": {
+      "n_positive": 5,
+      "total_positive": 14.757226292685685,
+      "top1_share": 0.5895416813057948,
+      "top5_share": 1.0,
+      "top10_share": 1.0,
+      "best_day": "2026-10-22",
+      "worst_day": "2026-10-02",
+      "leave_best_day_out_ev": -0.8663008092773401,
+      "leave_worst_day_out_ev": -0.41179581201243365,
+      "leave_one_day_out_ev": -0.8663008092773401
+     }
+    },
+    "p4_flow_tp3": {
+     "tag": "E2h_primary",
+     "policy": "p4_flow_tp3",
+     "trades": 346,
+     "eligible_tokens": 16213,
+     "days": 30,
+     "ev": -0.6193364130351351,
+     "total": -214.29039891015674,
+     "ev_floored": -0.450396369473229,
+     "total_floored": -155.83714383773722,
+     "ci": [
+      -0.7592100196596412,
+      -0.4745393152186305
+     ],
+     "ci_floored": [
+      -0.5771286562492629,
+      -0.3177769342357844
+     ],
+     "p_one": 1.0,
+     "p_two": 0.00019998000199980003,
+     "p_one_floored": 1.0,
+     "de": 1.540777474471641,
+     "eff_n": 224.56195377508965,
+     "halves": {
+      "Oct2_16": {
+       "trades": 195,
+       "ev": -0.49884082630519994
+      },
+      "Oct17_31": {
+       "trades": 151,
+       "ev": -0.774943296560548
+      }
+     },
+     "policy_level_ev_per_eligible_token": -0.01321719601000165,
+     "policy_level_ci": [
+      -0.017682423360212928,
+      -0.009374729761230053
+     ],
+     "policy_level_p_one": 1.0,
+     "paired_vs_flow": null,
+     "stress_c04_ev": -0.7193364130351351,
+     "stress_c04_ev_floored": -0.4823711016734553,
+     "realfee_ev": -0.34433641303513507,
+     "sens_plus0015_ev": -0.6343364130351351,
+     "sens_plus005_ev": -0.6693364130351351,
+     "sens_plus010_ev": -0.7193364130351351,
+     "concentration": {
+      "n_positive": 72,
+      "total_positive": 99.28442515505903,
+      "top1_share": 0.01712252447798331,
+      "top5_share": 0.08561262238991654,
+      "top10_share": 0.17122524477983309,
+      "best_day": "2026-10-11",
+      "worst_day": "2026-10-21",
+      "leave_best_day_out_ev": -0.6460151536432229,
+      "leave_worst_day_out_ev": -0.5826857472653088,
+      "leave_one_day_out_ev": -0.6460151536432229
+     }
+    },
+    "p5_flow_tp5": {
+     "tag": "E2h_primary",
+     "policy": "p5_flow_tp5",
+     "trades": 308,
+     "eligible_tokens": 16213,
+     "days": 30,
+     "ev": -0.6359791419874249,
+     "total": -195.88157573212686,
+     "ev_floored": -0.45657846349785847,
+     "total_floored": -140.6261667573404,
+     "ci": [
+      -0.8144811448268069,
+      -0.4427296357356889
+     ],
+     "ci_floored": [
+      -0.6230406815073992,
+      -0.27654116982807836
+     ],
+     "p_one": 1.0,
+     "p_two": 0.00019998000199980003,
+     "p_one_floored": 1.0,
+     "de": 1.5609217790063048,
+     "eff_n": 197.31930462016825,
+     "halves": {
+      "Oct2_16": {
+       "trades": 173,
+       "ev": -0.5161052087622255
+      },
+      "Oct17_31": {
+       "trades": 135,
+       "ev": -0.7895953675278654
+      }
+     },
+     "policy_level_ev_per_eligible_token": -0.012081760052558252,
+     "policy_level_ci": [
+      -0.01684930597090412,
+      -0.007714125128248523
+     ],
+     "policy_level_p_one": 1.0,
+     "paired_vs_flow": null,
+     "stress_c04_ev": -0.7359791419874249,
+     "stress_c04_ev_floored": -0.48470592239811267,
+     "realfee_ev": -0.360979141987425,
+     "sens_plus0015_ev": -0.6509791419874249,
+     "sens_plus005_ev": -0.6859791419874249,
+     "sens_plus010_ev": -0.7359791419874249,
+     "concentration": {
+      "n_positive": 51,
+      "total_positive": 99.2475180432459,
+      "top1_share": 0.03728052925603409,
+      "top5_share": 0.18640264628017045,
+      "top10_share": 0.37280529256034095,
+      "best_day": "2026-10-12",
+      "worst_day": "2026-10-21",
+      "leave_best_day_out_ev": -0.6833102306349457,
+      "leave_worst_day_out_ev": -0.5957668145383842,
+      "leave_one_day_out_ev": -0.6833102306349457
+     }
+    },
+    "p6_flow_tp10": {
+     "tag": "E2h_primary",
+     "policy": "p6_flow_tp10",
+     "trades": 308,
+     "eligible_tokens": 16213,
+     "days": 30,
+     "ev": -0.7144054078179137,
+     "total": -220.03686560791743,
+     "ev_floored": -0.5277755812026899,
+     "total_floored": -162.55487901042846,
+     "ci": [
+      -0.8834776962809137,
+      -0.519633783042143
+     ],
+     "ci_floored": [
+      -0.685256800993025,
+      -0.3487603341816302
+     ],
+     "p_one": 1.0,
+     "p_two": 0.00019998000199980003,
+     "p_one_floored": 1.0,
+     "de": 1.2100541651436632,
+     "eff_n": 254.53406043475155,
+     "halves": {
+      "Oct2_16": {
+       "trades": 173,
+       "ev": -0.6736777864324636
+      },
+      "Oct17_31": {
+       "trades": 135,
+       "ev": -0.7665971004081575
+      }
+     },
+     "policy_level_ev_per_eligible_token": -0.013571631752785878,
+     "policy_level_ci": [
+      -0.01802152226368837,
+      -0.00930123204118216
+     ],
+     "policy_level_p_one": 1.0,
+     "paired_vs_flow": null,
+     "stress_c04_ev": -0.8144054078179138,
+     "stress_c04_ev_floored": -0.5533056375055414,
+     "realfee_ev": -0.4394054078179137,
+     "sens_plus0015_ev": -0.7294054078179137,
+     "sens_plus005_ev": -0.7644054078179138,
+     "sens_plus010_ev": -0.8144054078179137,
+     "concentration": {
+      "n_positive": 42,
+      "total_positive": 85.9918945378507,
+      "top1_share": 0.10117232614488515,
+      "top5_share": 0.46721203245172716,
+      "top10_share": 0.7413290848772645,
+      "best_day": "2026-10-12",
+      "worst_day": "2026-10-21",
+      "leave_best_day_out_ev": -0.7704478888983793,
+      "leave_worst_day_out_ev": -0.6805222176113336,
+      "leave_one_day_out_ev": -0.7704478888983793
+     }
+    },
+    "p7_hgb_multi": {
+     "tag": "E2h_primary",
+     "policy": "p7_hgb_multi",
+     "trades": 83,
+     "eligible_tokens": 16213,
+     "days": 30,
+     "ev": -0.5162340607485731,
+     "total": -42.84742704213157,
+     "ev_floored": -0.3578441801079612,
+     "total_floored": -29.70106694896078,
+     "ci": [
+      -0.8228691376950524,
+      -0.09353833504394198
+     ],
+     "ci_floored": [
+      -0.6430866848928731,
+      0.043533723370565776
+     ],
+     "p_one": 0.9907009299070093,
+     "p_two": 0.0187981201879812,
+     "p_one_floored": 0.9616038396160383,
+     "de": 1.4514693851592024,
+     "eff_n": 57.18343138935463,
+     "halves": {
+      "Oct2_16": {
+       "trades": 52,
+       "ev": -0.7027218528249624
+      },
+      "Oct17_31": {
+       "trades": 31,
+       "ev": -0.20341582887850101
+      }
+     },
+     "policy_level_ev_per_eligible_token": -0.0026427821527250706,
+     "policy_level_ci": [
+      -0.00460528886765733,
+      -0.0004769469414191369
+     ],
+     "policy_level_p_one": 0.9901009899010099,
+     "paired_vs_flow": {
+      "mean_diff": -0.5053423216330072,
+      "ci": [
+       -0.8073860131627959,
+       -0.08721168445028654
+      ],
+      "p_one": 0.9901009899010099,
+      "p_two": 0.019998000199980003
+     },
+     "stress_c04_ev": -0.6162340607485732,
+     "stress_c04_ev_floored": -0.40357894701649155,
+     "realfee_ev": -0.2412340607485732,
+     "sens_plus0015_ev": -0.5312340607485732,
+     "sens_plus005_ev": -0.5662340607485732,
+     "sens_plus010_ev": -0.6162340607485731,
+     "concentration": {
+      "n_positive": 10,
+      "total_positive": 23.642879683392117,
+      "top1_share": 0.36797547999668134,
+      "top5_share": 0.8040223519850848,
+      "top10_share": 1.0,
+      "best_day": "2026-10-22",
+      "worst_day": "2026-10-02",
+      "leave_best_day_out_ev": -0.6827756731343698,
+      "leave_worst_day_out_ev": -0.44546659945743444,
+      "leave_one_day_out_ev": -0.6827756731343698
+     }
+    },
+    "p8_flow_multi": {
+     "tag": "E2h_primary",
+     "policy": "p8_flow_multi",
+     "trades": 346,
+     "eligible_tokens": 16213,
+     "days": 30,
+     "ev": -0.6193364130351351,
+     "total": -214.29039891015674,
+     "ev_floored": -0.450396369473229,
+     "total_floored": -155.83714383773722,
+     "ci": [
+      -0.7592100196596412,
+      -0.4745393152186305
+     ],
+     "ci_floored": [
+      -0.5771286562492629,
+      -0.3177769342357844
+     ],
+     "p_one": 1.0,
+     "p_two": 0.00019998000199980003,
+     "p_one_floored": 1.0,
+     "de": 1.540777474471641,
+     "eff_n": 224.56195377508965,
+     "halves": {
+      "Oct2_16": {
+       "trades": 195,
+       "ev": -0.49884082630519994
+      },
+      "Oct17_31": {
+       "trades": 151,
+       "ev": -0.774943296560548
+      }
+     },
+     "policy_level_ev_per_eligible_token": -0.01321719601000165,
+     "policy_level_ci": [
+      -0.017682423360212928,
+      -0.009374729761230053
+     ],
+     "policy_level_p_one": 1.0,
+     "paired_vs_flow": null,
+     "stress_c04_ev": -0.7193364130351351,
+     "stress_c04_ev_floored": -0.4823711016734553,
+     "realfee_ev": -0.34433641303513507,
+     "sens_plus0015_ev": -0.6343364130351351,
+     "sens_plus005_ev": -0.6693364130351351,
+     "sens_plus010_ev": -0.7193364130351351,
+     "concentration": {
+      "n_positive": 72,
+      "total_positive": 99.28442515505903,
+      "top1_share": 0.01712252447798331,
+      "top5_share": 0.08561262238991654,
+      "top10_share": 0.17122524477983309,
+      "best_day": "2026-10-11",
+      "worst_day": "2026-10-21",
+      "leave_best_day_out_ev": -0.6460151536432229,
+      "leave_worst_day_out_ev": -0.5826857472653088,
+      "leave_one_day_out_ev": -0.6460151536432229
+     }
+    }
+   },
+   "n_oos_rows": 16213,
+   "n_eligible": 16213
+  },
+  "E1h_sensitivity": {
+   "aggregates": {
+    "p1_hgb_tp3": {
+     "tag": "E1h_sensitivity",
+     "policy": "p1_hgb_tp3",
+     "trades": 18,
+     "eligible_tokens": 16213,
+     "days": 30,
+     "ev": -0.49029060477611947,
+     "total": -8.82523088597015,
+     "ev_floored": -0.3596210614667326,
+     "total_floored": -6.473179106401187,
+     "ci": [
+      -0.946075944328588,
+      -0.21278533620620035
+     ],
+     "ci_floored": [
+      -0.7437527337673706,
+      -0.09895620569819223
+     ],
+     "p_one": 1.0,
+     "p_two": 0.00019998000199980003,
+     "p_one_floored": 0.9993000699930007,
+     "de": 0.6750308677671336,
+     "eff_n": 18.0,
+     "halves": {
+      "Oct2_16": {
+       "trades": 15,
+       "ev": -0.3937034740167614
+      },
+      "Oct17_31": {
+       "trades": 3,
+       "ev": -0.9732262585729092
+      }
+     },
+     "policy_level_ev_per_eligible_token": -0.00054433053018998,
+     "policy_level_ci": [
+      -0.0010189946973945068,
+      -0.0001457013922568934
+     ],
+     "policy_level_p_one": 1.0,
+     "paired_vs_flow": {
+      "mean_diff": -0.4846009291888971,
+      "ci": [
+       -0.9404748371546888,
+       -0.20800043412129104
+      ],
+      "p_one": 1.0,
+      "p_two": 0.00019998000199980003
+     },
+     "stress_c04_ev": -0.5902906047761195,
+     "stress_c04_ev_floored": -0.41517661702228814,
+     "realfee_ev": -0.21529060477611936,
+     "sens_plus0015_ev": -0.5052906047761194,
+     "sens_plus005_ev": -0.5402906047761195,
+     "sens_plus010_ev": -0.5902906047761195,
+     "concentration": {
+      "n_positive": 2,
+      "total_positive": 3.4,
+      "top1_share": 0.5,
+      "top5_share": 1.0,
+      "top10_share": 1.0,
+      "best_day": "2026-10-03",
+      "worst_day": "2026-10-17",
+      "leave_best_day_out_ev": -0.5112870993650191,
+      "leave_worst_day_out_ev": -0.38966989475567626,
+      "leave_one_day_out_ev": -0.5112870993650191
+     }
+    },
+    "p2_hgb_tp5": {
+     "tag": "E1h_sensitivity",
+     "policy": "p2_hgb_tp5",
+     "trades": 30,
+     "eligible_tokens": 16213,
+     "days": 30,
+     "ev": -0.6166092861465633,
+     "total": -18.4982785843969,
+     "ev_floored": -0.5197823777582534,
+     "total_floored": -15.593471332747601,
+     "ci": [
+      -0.8004963690628994,
+      -0.46087924692651433
+     ],
+     "ci_floored": [
+      -0.652800345149703,
+      -0.4051674693725992
+     ],
+     "p_one": 1.0,
+     "p_two": 0.00019998000199980003,
+     "p_one_floored": 1.0,
+     "de": 0.8235945271293159,
+     "eff_n": 30.0,
+     "halves": {
+      "Oct2_16": {
+       "trades": 17,
+       "ev": -0.5673121900820203
+      },
+      "Oct17_31": {
+       "trades": 13,
+       "ev": -0.6810747194617348
+      }
+     },
+     "policy_level_ev_per_eligible_token": -0.0011409534684757232,
+     "policy_level_ci": [
+      -0.0017092854297365487,
+      -0.0006193071539214734
+     ],
+     "policy_level_p_one": 1.0,
+     "paired_vs_flow": {
+      "mean_diff": -0.5789314491218056,
+      "ci": [
+       -0.7899877456754487,
+       -0.41005260855779824
+      ],
+      "p_one": 1.0,
+      "p_two": 0.00019998000199980003
+     },
+     "stress_c04_ev": -0.7166092861465633,
+     "stress_c04_ev_floored": -0.5863152328718538,
+     "realfee_ev": -0.3416092861465634,
+     "sens_plus0015_ev": -0.6316092861465633,
+     "sens_plus005_ev": -0.6666092861465633,
+     "sens_plus010_ev": -0.7166092861465633,
+     "concentration": {
+      "n_positive": 1,
+      "total_positive": 0.08565339070642569,
+      "top1_share": 1.0,
+      "top5_share": 1.0,
+      "top10_share": 1.0,
+      "best_day": "2026-10-26",
+      "worst_day": "2026-10-04",
+      "leave_best_day_out_ev": -0.6302206412358596,
+      "leave_worst_day_out_ev": -0.5788321256811484,
+      "leave_one_day_out_ev": -0.6302206412358596
+     }
+    },
+    "p3_hgb_tp10": {
+     "tag": "E1h_sensitivity",
+     "policy": "p3_hgb_tp10",
+     "trades": 40,
+     "eligible_tokens": 16213,
+     "days": 30,
+     "ev": -0.5480279829375871,
+     "total": -21.921119317503486,
+     "ev_floored": -0.344420106286048,
+     "total_floored": -13.77680425144192,
+     "ci": [
+      -0.9421714969102922,
+      0.0797811327509954
+     ],
+     "ci_floored": [
+      -0.7217812130066654,
+      0.2613422864887408
+     ],
+     "p_one": 0.9608039196080392,
+     "p_two": 0.0785921407859214,
+     "p_one_floored": 0.8916108389161084,
+     "de": 0.8915856313903945,
+     "eff_n": 40.0,
+     "halves": {
+      "Oct2_16": {
+       "trades": 20,
+       "ev": -0.8687460495784494
+      },
+      "Oct17_31": {
+       "trades": 20,
+       "ev": -0.22730991629672492
+      }
+     },
+     "policy_level_ev_per_eligible_token": -0.0013520705185655637,
+     "policy_level_ci": [
+      -0.0028171764908117656,
+      0.00020724786583703006
+     ],
+     "policy_level_p_one": 0.9576042395760423,
+     "paired_vs_flow": {
+      "mean_diff": -0.4509601688594912,
+      "ci": [
+       -0.9174395528931965,
+       0.2697780783076302
+      ],
+      "p_one": 0.9066093390660934,
+      "p_two": 0.18698130186981302
+     },
+     "stress_c04_ev": -0.6480279829375871,
+     "stress_c04_ev_floored": -0.374420106286048,
+     "realfee_ev": -0.2730279829375871,
+     "sens_plus0015_ev": -0.5630279829375872,
+     "sens_plus005_ev": -0.5980279829375872,
+     "sens_plus010_ev": -0.6480279829375871,
+     "concentration": {
+      "n_positive": 5,
+      "total_positive": 15.913154853866446,
+      "top1_share": 0.5467174849923707,
+      "top5_share": 1.0,
+      "top10_share": 1.0,
+      "best_day": "2026-10-22",
+      "worst_day": "2026-10-02",
+      "leave_best_day_out_ev": -0.7717832770329259,
+      "leave_worst_day_out_ev": -0.4307449002898518,
+      "leave_one_day_out_ev": -0.7717832770329259
+     }
+    },
+    "p4_flow_tp3": {
+     "tag": "E1h_sensitivity",
+     "policy": "p4_flow_tp3",
+     "trades": 346,
+     "eligible_tokens": 16213,
+     "days": 30,
+     "ev": -0.6193364130351351,
+     "total": -214.29039891015674,
+     "ev_floored": -0.450396369473229,
+     "total_floored": -155.83714383773722,
+     "ci": [
+      -0.7592100196596412,
+      -0.4745393152186305
+     ],
+     "ci_floored": [
+      -0.5771286562492629,
+      -0.3177769342357844
+     ],
+     "p_one": 1.0,
+     "p_two": 0.00019998000199980003,
+     "p_one_floored": 1.0,
+     "de": 1.540777474471641,
+     "eff_n": 224.56195377508965,
+     "halves": {
+      "Oct2_16": {
+       "trades": 195,
+       "ev": -0.49884082630519994
+      },
+      "Oct17_31": {
+       "trades": 151,
+       "ev": -0.774943296560548
+      }
+     },
+     "policy_level_ev_per_eligible_token": -0.01321719601000165,
+     "policy_level_ci": [
+      -0.017682423360212928,
+      -0.009374729761230053
+     ],
+     "policy_level_p_one": 1.0,
+     "paired_vs_flow": null,
+     "stress_c04_ev": -0.7193364130351351,
+     "stress_c04_ev_floored": -0.4823711016734553,
+     "realfee_ev": -0.34433641303513507,
+     "sens_plus0015_ev": -0.6343364130351351,
+     "sens_plus005_ev": -0.6693364130351351,
+     "sens_plus010_ev": -0.7193364130351351,
+     "concentration": {
+      "n_positive": 72,
+      "total_positive": 99.28442515505903,
+      "top1_share": 0.01712252447798331,
+      "top5_share": 0.08561262238991654,
+      "top10_share": 0.17122524477983309,
+      "best_day": "2026-10-11",
+      "worst_day": "2026-10-21",
+      "leave_best_day_out_ev": -0.6460151536432229,
+      "leave_worst_day_out_ev": -0.5826857472653088,
+      "leave_one_day_out_ev": -0.6460151536432229
+     }
+    },
+    "p5_flow_tp5": {
+     "tag": "E1h_sensitivity",
+     "policy": "p5_flow_tp5",
+     "trades": 308,
+     "eligible_tokens": 16213,
+     "days": 30,
+     "ev": -0.6359791419874249,
+     "total": -195.88157573212686,
+     "ev_floored": -0.45657846349785847,
+     "total_floored": -140.6261667573404,
+     "ci": [
+      -0.8144811448268069,
+      -0.4427296357356889
+     ],
+     "ci_floored": [
+      -0.6230406815073992,
+      -0.27654116982807836
+     ],
+     "p_one": 1.0,
+     "p_two": 0.00019998000199980003,
+     "p_one_floored": 1.0,
+     "de": 1.5609217790063048,
+     "eff_n": 197.31930462016825,
+     "halves": {
+      "Oct2_16": {
+       "trades": 173,
+       "ev": -0.5161052087622255
+      },
+      "Oct17_31": {
+       "trades": 135,
+       "ev": -0.7895953675278654
+      }
+     },
+     "policy_level_ev_per_eligible_token": -0.012081760052558252,
+     "policy_level_ci": [
+      -0.01684930597090412,
+      -0.007714125128248523
+     ],
+     "policy_level_p_one": 1.0,
+     "paired_vs_flow": null,
+     "stress_c04_ev": -0.7359791419874249,
+     "stress_c04_ev_floored": -0.48470592239811267,
+     "realfee_ev": -0.360979141987425,
+     "sens_plus0015_ev": -0.6509791419874249,
+     "sens_plus005_ev": -0.6859791419874249,
+     "sens_plus010_ev": -0.7359791419874249,
+     "concentration": {
+      "n_positive": 51,
+      "total_positive": 99.2475180432459,
+      "top1_share": 0.03728052925603409,
+      "top5_share": 0.18640264628017045,
+      "top10_share": 0.37280529256034095,
+      "best_day": "2026-10-12",
+      "worst_day": "2026-10-21",
+      "leave_best_day_out_ev": -0.6833102306349457,
+      "leave_worst_day_out_ev": -0.5957668145383842,
+      "leave_one_day_out_ev": -0.6833102306349457
+     }
+    },
+    "p6_flow_tp10": {
+     "tag": "E1h_sensitivity",
+     "policy": "p6_flow_tp10",
+     "trades": 308,
+     "eligible_tokens": 16213,
+     "days": 30,
+     "ev": -0.7144054078179137,
+     "total": -220.03686560791743,
+     "ev_floored": -0.5277755812026899,
+     "total_floored": -162.55487901042846,
+     "ci": [
+      -0.8834776962809137,
+      -0.519633783042143
+     ],
+     "ci_floored": [
+      -0.685256800993025,
+      -0.3487603341816302
+     ],
+     "p_one": 1.0,
+     "p_two": 0.00019998000199980003,
+     "p_one_floored": 1.0,
+     "de": 1.2100541651436632,
+     "eff_n": 254.53406043475155,
+     "halves": {
+      "Oct2_16": {
+       "trades": 173,
+       "ev": -0.6736777864324636
+      },
+      "Oct17_31": {
+       "trades": 135,
+       "ev": -0.7665971004081575
+      }
+     },
+     "policy_level_ev_per_eligible_token": -0.013571631752785878,
+     "policy_level_ci": [
+      -0.01802152226368837,
+      -0.00930123204118216
+     ],
+     "policy_level_p_one": 1.0,
+     "paired_vs_flow": null,
+     "stress_c04_ev": -0.8144054078179138,
+     "stress_c04_ev_floored": -0.5533056375055414,
+     "realfee_ev": -0.4394054078179137,
+     "sens_plus0015_ev": -0.7294054078179137,
+     "sens_plus005_ev": -0.7644054078179138,
+     "sens_plus010_ev": -0.8144054078179137,
+     "concentration": {
+      "n_positive": 42,
+      "total_positive": 85.9918945378507,
+      "top1_share": 0.10117232614488515,
+      "top5_share": 0.46721203245172716,
+      "top10_share": 0.7413290848772645,
+      "best_day": "2026-10-12",
+      "worst_day": "2026-10-21",
+      "leave_best_day_out_ev": -0.7704478888983793,
+      "leave_worst_day_out_ev": -0.6805222176113336,
+      "leave_one_day_out_ev": -0.7704478888983793
+     }
+    },
+    "p7_hgb_multi": {
+     "tag": "E1h_sensitivity",
+     "policy": "p7_hgb_multi",
+     "trades": 74,
+     "eligible_tokens": 16213,
+     "days": 30,
+     "ev": -0.5490705015833205,
+     "total": -40.63121711716572,
+     "ev_floored": -0.387742652827516,
+     "total_floored": -28.692956309236187,
+     "ci": [
+      -0.798874986375853,
+      -0.2428545534727587
+     ],
+     "ci_floored": [
+      -0.6174470822232643,
+      -0.09028179461777379
+     ],
+     "p_one": 0.9995000499950005,
+     "p_two": 0.0011998800119988001,
+     "p_one_floored": 0.9927007299270073,
+     "de": 0.7472598021878174,
+     "eff_n": 74.0,
+     "halves": {
+      "Oct2_16": {
+       "trades": 41,
+       "ev": -0.6378616044134396
+      },
+      "Oct17_31": {
+       "trades": 33,
+       "ev": -0.4387542829155969
+      }
+     },
+     "policy_level_ev_per_eligible_token": -0.0025060887631632466,
+     "policy_level_ci": [
+      -0.003877250879571975,
+      -0.001031303031147628
+     ],
+     "policy_level_p_one": 0.9989001099890011,
+     "paired_vs_flow": {
+      "mean_diff": -0.4813266140986372,
+      "ci": [
+       -0.761587141140496,
+       -0.13348676102978602
+      ],
+      "p_one": 0.9944005599440056,
+      "p_two": 0.011398860113988602
+     },
+     "stress_c04_ev": -0.6490705015833205,
+     "stress_c04_ev_floored": -0.43228299949519194,
+     "realfee_ev": -0.2740705015833205,
+     "sens_plus0015_ev": -0.5640705015833205,
+     "sens_plus005_ev": -0.5990705015833205,
+     "sens_plus010_ev": -0.6490705015833205,
+     "concentration": {
+      "n_positive": 8,
+      "total_positive": 19.39880824457287,
+      "top1_share": 0.44848115875540784,
+      "top5_share": 0.8827569543521099,
+      "top10_share": 1.0,
+      "best_day": "2026-10-22",
+      "worst_day": "2026-10-02",
+      "leave_best_day_out_ev": -0.6585465781179745,
+      "leave_worst_day_out_ev": -0.492332342559659,
+      "leave_one_day_out_ev": -0.6585465781179745
+     }
+    },
+    "p8_flow_multi": {
+     "tag": "E1h_sensitivity",
+     "policy": "p8_flow_multi",
+     "trades": 346,
+     "eligible_tokens": 16213,
+     "days": 30,
+     "ev": -0.6193364130351351,
+     "total": -214.29039891015674,
+     "ev_floored": -0.450396369473229,
+     "total_floored": -155.83714383773722,
+     "ci": [
+      -0.7592100196596412,
+      -0.4745393152186305
+     ],
+     "ci_floored": [
+      -0.5771286562492629,
+      -0.3177769342357844
+     ],
+     "p_one": 1.0,
+     "p_two": 0.00019998000199980003,
+     "p_one_floored": 1.0,
+     "de": 1.540777474471641,
+     "eff_n": 224.56195377508965,
+     "halves": {
+      "Oct2_16": {
+       "trades": 195,
+       "ev": -0.49884082630519994
+      },
+      "Oct17_31": {
+       "trades": 151,
+       "ev": -0.774943296560548
+      }
+     },
+     "policy_level_ev_per_eligible_token": -0.01321719601000165,
+     "policy_level_ci": [
+      -0.017682423360212928,
+      -0.009374729761230053
+     ],
+     "policy_level_p_one": 1.0,
+     "paired_vs_flow": null,
+     "stress_c04_ev": -0.7193364130351351,
+     "stress_c04_ev_floored": -0.4823711016734553,
+     "realfee_ev": -0.34433641303513507,
+     "sens_plus0015_ev": -0.6343364130351351,
+     "sens_plus005_ev": -0.6693364130351351,
+     "sens_plus010_ev": -0.7193364130351351,
+     "concentration": {
+      "n_positive": 72,
+      "total_positive": 99.28442515505903,
+      "top1_share": 0.01712252447798331,
+      "top5_share": 0.08561262238991654,
+      "top10_share": 0.17122524477983309,
+      "best_day": "2026-10-11",
+      "worst_day": "2026-10-21",
+      "leave_best_day_out_ev": -0.6460151536432229,
+      "leave_worst_day_out_ev": -0.5826857472653088,
+      "leave_one_day_out_ev": -0.6460151536432229
+     }
+    }
+   },
+   "n_oos_rows": 16213,
+   "n_eligible": 16213
+  },
+  "November_E2h": {
+   "aggregates": {
+    "p1_hgb_tp3": {
+     "tag": "November_E2h",
+     "policy": "p1_hgb_tp3",
+     "trades": 15,
+     "eligible_tokens": 5980,
+     "days": 16,
+     "ev": 0.26126007261604006,
+     "total": 3.9189010892406007,
+     "ev_floored": 0.3580631821367611,
+     "total_floored": 5.370947732051416,
+     "ci": [
+      -0.4381396802172759,
+      1.0295277709844386
+     ],
+     "ci_floored": [
+      -0.2997562921933945,
+      1.0769230769230769
+     ],
+     "p_one": 0.2696730326967303,
+     "p_two": 0.5393460653934606,
+     "p_one_floored": 0.15778422157784222,
+     "de": 1.2289601616462804,
+     "eff_n": 12.205440394346406,
+     "halves": {
+      "Oct17_31": {
+       "trades": 15,
+       "ev": 0.26126007261604006
+      },
+      "Nov1_16": {
+       "trades": 15,
+       "ev": 0.26126007261604006
+      }
+     },
+     "policy_level_ev_per_eligible_token": 0.0006553346303077928,
+     "policy_level_ci": [
+      -0.0009336315448672859,
+      0.0026060706146818734
+     ],
+     "policy_level_p_one": 0.27377262273772623,
+     "paired_vs_flow": {
+      "mean_diff": 0.14792673928270664,
+      "ci": [
+       -0.708064871285946,
+       0.8727939290225806
+      ],
+      "p_one": 0.39286071392860716,
+      "p_two": 0.7857214278572143
+     },
+     "stress_c04_ev": 0.16126007261604,
+     "stress_c04_ev_floored": 0.29806318213676103,
+     "realfee_ev": 0.5362600726160401,
+     "sens_plus0015_ev": 0.24626007261604005,
+     "sens_plus005_ev": 0.21126007261604007,
+     "sens_plus010_ev": 0.16126007261604006,
+     "concentration": {
+      "n_positive": 9,
+      "total_positive": 11.370947732051414,
+      "top1_share": 0.14950380918629952,
+      "top5_share": 0.7475190459314976,
+      "top10_share": 1.0,
+      "best_day": "2026-11-03",
+      "worst_day": "2026-11-11",
+      "leave_best_day_out_ev": -0.09842490922995005,
+      "leave_worst_day_out_ev": 0.37265969414732386,
+      "leave_one_day_out_ev": -0.09842490922995005
+     }
+    },
+    "p2_hgb_tp5": {
+     "tag": "November_E2h",
+     "policy": "p2_hgb_tp5",
+     "trades": 30,
+     "eligible_tokens": 5980,
+     "days": 16,
+     "ev": -0.08151467886471968,
+     "total": -2.4454403659415904,
+     "ev_floored": -0.06157253023822041,
+     "total_floored": -1.8471759071466123,
+     "ci": [
+      -0.38359775253935946,
+      0.1537038375670826
+     ],
+     "ci_floored": [
+      -0.32790177961932687,
+      0.1660411729659007
+     ],
+     "p_one": 0.7539246075392461,
+     "p_two": 0.49235076492350766,
+     "p_one_floored": 0.7125287471252875,
+     "de": 0.8278697563942595,
+     "eff_n": 30.0,
+     "halves": {
+      "Oct17_31": {
+       "trades": 30,
+       "ev": -0.08151467886471968
+      },
+      "Nov1_16": {
+       "trades": 30,
+       "ev": -0.08151467886471968
+      }
+     },
+     "policy_level_ev_per_eligible_token": -0.00040893651604374413,
+     "policy_level_ci": [
+      -0.0015262772619141947,
+      0.0008855844290029268
+     ],
+     "policy_level_p_one": 0.7591240875912408,
+     "paired_vs_flow": {
+      "mean_diff": -0.0839268524638495,
+      "ci": [
+       -0.38478077392987636,
+       0.15093393367661442
+      ],
+      "p_one": 0.7622237776222378,
+      "p_two": 0.4757524247575243
+     },
+     "stress_c04_ev": -0.18151467886471967,
+     "stress_c04_ev_floored": -0.15490586357155375,
+     "realfee_ev": 0.19348532113528033,
+     "sens_plus0015_ev": -0.09651467886471968,
+     "sens_plus005_ev": -0.13151467886471968,
+     "sens_plus010_ev": -0.18151467886471967,
+     "concentration": {
+      "n_positive": 5,
+      "total_positive": 5.3977243628472324,
+      "top1_share": 0.6854740537451779,
+      "top5_share": 1.0,
+      "top10_share": 1.0,
+      "best_day": "2026-11-04",
+      "worst_day": "2026-11-03",
+      "leave_best_day_out_ev": -0.21189508282865613,
+      "leave_worst_day_out_ev": -0.039500363309260204,
+      "leave_one_day_out_ev": -0.21189508282865613
+     }
+    },
+    "p3_hgb_tp10": {
+     "tag": "November_E2h",
+     "policy": "p3_hgb_tp10",
+     "trades": 13,
+     "eligible_tokens": 5980,
+     "days": 16,
+     "ev": 1.1068601597296215,
+     "total": 14.38918207648508,
+     "ev_floored": 1.1975378146795694,
+     "total_floored": 15.567991590834403,
+     "ci": [
+      -0.39696857770932725,
+      3.30027698005212
+     ],
+     "ci_floored": [
+      -0.26051315729371255,
+      3.341125890310041
+     ],
+     "p_one": 0.09429057094290572,
+     "p_two": 0.18858114188581143,
+     "p_one_floored": 0.06239376062393761,
+     "de": 1.0210178316781573,
+     "eff_n": 12.732392713095953,
+     "halves": {
+      "Oct17_31": {
+       "trades": 13,
+       "ev": 1.1068601597296215
+      },
+      "Nov1_16": {
+       "trades": 13,
+       "ev": 1.1068601597296215
+      }
+     },
+     "policy_level_ev_per_eligible_token": 0.0024062177385426554,
+     "policy_level_ci": [
+      -0.0009535860961062262,
+      0.006964270699591099
+     ],
+     "policy_level_p_one": 0.10418958104189581,
+     "paired_vs_flow": {
+      "mean_diff": 1.101293605270091,
+      "ci": [
+       -0.4042050985067167,
+       3.30027698005212
+      ],
+      "p_one": 0.09429057094290572,
+      "p_two": 0.18858114188581143
+     },
+     "stress_c04_ev": 1.0068601597296216,
+     "stress_c04_ev_floored": 1.1283070454488,
+     "realfee_ev": 1.3818601597296216,
+     "sens_plus0015_ev": 1.0918601597296216,
+     "sens_plus005_ev": 1.0568601597296214,
+     "sens_plus010_ev": 1.0068601597296214,
+     "concentration": {
+      "n_positive": 6,
+      "total_positive": 20.362320684294907,
+      "top1_share": 0.4272597477904448,
+      "top5_share": 0.9964461217807208,
+      "top10_share": 1.0,
+      "best_day": "2026-11-16",
+      "worst_day": "2026-11-01",
+      "leave_best_day_out_ev": 0.553280409253635,
+      "leave_worst_day_out_ev": 1.6086603396902341,
+      "leave_one_day_out_ev": 0.553280409253635
+     }
+    },
+    "p4_flow_tp3": {
+     "tag": "November_E2h",
+     "policy": "p4_flow_tp3",
+     "trades": 81,
+     "eligible_tokens": 5980,
+     "days": 16,
+     "ev": -0.3200401850939121,
+     "total": -25.92325499260688,
+     "ev_floored": -0.19907840829124374,
+     "total_floored": -16.125351071590742,
+     "ci": [
+      -0.5097390349691373,
+      -0.0876234818126036
+     ],
+     "ci_floored": [
+      -0.3771006925373555,
+      0.021247130895866714
+     ],
+     "p_one": 0.9952004799520048,
+     "p_two": 0.009799020097990201,
+     "p_one_floored": 0.9653034696530347,
+     "de": 0.6772783598205012,
+     "eff_n": 81.0,
+     "halves": {
+      "Oct17_31": {
+       "trades": 81,
+       "ev": -0.3200401850939121
+      },
+      "Nov1_16": {
+       "trades": 81,
+       "ev": -0.3200401850939121
+      }
+     },
+     "policy_level_ev_per_eligible_token": -0.00433499247368008,
+     "policy_level_ci": [
+      -0.0074915154175022565,
+      -0.0010797342406874875
+     ],
+     "policy_level_p_one": 0.9952004799520048,
+     "paired_vs_flow": null,
+     "stress_c04_ev": -0.4200401850939121,
+     "stress_c04_ev_floored": -0.24589441540708906,
+     "realfee_ev": -0.0450401850939121,
+     "sens_plus0015_ev": -0.3350401850939121,
+     "sens_plus005_ev": -0.37004018509391207,
+     "sens_plus010_ev": -0.42004018509391206,
+     "concentration": {
+      "n_positive": 25,
+      "total_positive": 32.740158970277115,
+      "top1_share": 0.05192399956100797,
+      "top5_share": 0.25961999780503986,
+      "top10_share": 0.5192399956100797,
+      "best_day": "2026-11-05",
+      "worst_day": "2026-11-04",
+      "leave_best_day_out_ev": -0.37732721628526084,
+      "leave_worst_day_out_ev": -0.265125940066449,
+      "leave_one_day_out_ev": -0.37732721628526084
+     }
+    },
+    "p5_flow_tp5": {
+     "tag": "November_E2h",
+     "policy": "p5_flow_tp5",
+     "trades": 75,
+     "eligible_tokens": 5980,
+     "days": 16,
+     "ev": -0.30193690663091094,
+     "total": -22.64526799731832,
+     "ev_floored": -0.1715059999063819,
+     "total_floored": -12.862949992978642,
+     "ci": [
+      -0.5755765545323974,
+      0.04044552738607037
+     ],
+     "ci_floored": [
+      -0.430885588124394,
+      0.15296449797722803
+     ],
+     "p_one": 0.958904109589041,
+     "p_two": 0.08239176082391761,
+     "p_one_floored": 0.8593140685931406,
+     "de": 0.8672502947354058,
+     "eff_n": 75.0,
+     "halves": {
+      "Oct17_31": {
+       "trades": 75,
+       "ev": -0.30193690663091094
+      },
+      "Nov1_16": {
+       "trades": 75,
+       "ev": -0.30193690663091094
+      }
+     },
+     "policy_level_ev_per_eligible_token": -0.003786834113263933,
+     "policy_level_ci": [
+      -0.008035130713628994,
+      0.00043958590363402827
+     ],
+     "policy_level_p_one": 0.958904109589041,
+     "paired_vs_flow": null,
+     "stress_c04_ev": -0.401936906630911,
+     "stress_c04_ev_floored": -0.21540062092482817,
+     "realfee_ev": -0.02693690663091097,
+     "sens_plus0015_ev": -0.31693690663091095,
+     "sens_plus005_ev": -0.35193690663091093,
+     "sens_plus010_ev": -0.401936906630911,
+     "concentration": {
+      "n_positive": 20,
+      "total_positive": 34.43600692153262,
+      "top1_share": 0.10744567476801188,
+      "top5_share": 0.5372283738400594,
+      "top10_share": 0.8537802543624057,
+      "best_day": "2026-11-05",
+      "worst_day": "2026-11-13",
+      "leave_best_day_out_ev": -0.3760129661497092,
+      "leave_worst_day_out_ev": -0.23367297963135075,
+      "leave_one_day_out_ev": -0.3760129661497092
+     }
+    },
+    "p6_flow_tp10": {
+     "tag": "November_E2h",
+     "policy": "p6_flow_tp10",
+     "trades": 75,
+     "eligible_tokens": 5980,
+     "days": 16,
+     "ev": -0.2831383253401537,
+     "total": -21.235374400511528,
+     "ev_floored": -0.14934098777370886,
+     "total_floored": -11.200574083028163,
+     "ci": [
+      -0.5994968436703801,
+      0.14305042634437368
+     ],
+     "ci_floored": [
+      -0.45215569784879583,
+      0.2663252317775988
+     ],
+     "p_one": 0.9164083591640836,
+     "p_two": 0.1673832616738326,
+     "p_one_floored": 0.7893210678932107,
+     "de": 0.7870352490463659,
+     "eff_n": 75.0,
+     "halves": {
+      "Oct17_31": {
+       "trades": 75,
+       "ev": -0.2831383253401537
+      },
+      "Nov1_16": {
+       "trades": 75,
+       "ev": -0.2831383253401537
+      }
+     },
+     "policy_level_ev_per_eligible_token": -0.003551065953262797,
+     "policy_level_ci": [
+      -0.008392094719682162,
+      0.0015263194600042853
+     ],
+     "policy_level_p_one": 0.9164083591640836,
+     "paired_vs_flow": null,
+     "stress_c04_ev": -0.38313832534015374,
+     "stress_c04_ev_floored": -0.19190227545882185,
+     "realfee_ev": -0.0081383253401537,
+     "sens_plus0015_ev": -0.2981383253401537,
+     "sens_plus005_ev": -0.3331383253401537,
+     "sens_plus010_ev": -0.3831383253401537,
+     "concentration": {
+      "n_positive": 19,
+      "total_positive": 37.0983828314831,
+      "top1_share": 0.23451156993875344,
+      "top5_share": 0.7030155585044402,
+      "top10_share": 0.8911368450690151,
+      "best_day": "2026-11-11",
+      "worst_day": "2026-11-13",
+      "leave_best_day_out_ev": -0.3927649432662316,
+      "leave_worst_day_out_ev": -0.2123109554373084,
+      "leave_one_day_out_ev": -0.3927649432662316
+     }
+    },
+    "p7_hgb_multi": {
+     "tag": "November_E2h",
+     "policy": "p7_hgb_multi",
+     "trades": 49,
+     "eligible_tokens": 5980,
+     "days": 16,
+     "ev": 0.34903474595086637,
+     "total": 17.10270255159245,
+     "ev_floored": 0.4027582430592592,
+     "total_floored": 19.7351539099037,
+     "ci": [
+      -0.12821463156802151,
+      1.097716455825596
+     ],
+     "ci_floored": [
+      -0.06410479180593125,
+      1.1549283462755766
+     ],
+     "p_one": 0.0831916808319168,
+     "p_two": 0.1663833616638336,
+     "p_one_floored": 0.04999500049995,
+     "de": 1.2194494307884394,
+     "eff_n": 40.18206804059015,
+     "halves": {
+      "Oct17_31": {
+       "trades": 49,
+       "ev": 0.34903474595086637
+      },
+      "Nov1_16": {
+       "trades": 49,
+       "ev": 0.34903474595086637
+      }
+     },
+     "policy_level_ev_per_eligible_token": 0.0028599837042796745,
+     "policy_level_ci": [
+      -0.0010610605364725582,
+      0.007508396843058488
+     ],
+     "policy_level_p_one": 0.0841915808419158,
+     "paired_vs_flow": {
+      "mean_diff": 0.31286402742078684,
+      "ci": [
+       -0.1809639860604262,
+       1.069069457435795
+      ],
+      "p_one": 0.11778822117788221,
+      "p_two": 0.23557644235576441
+     },
+     "stress_c04_ev": 0.24903474595086636,
+     "stress_c04_ev_floored": 0.32316640632456534,
+     "realfee_ev": 0.6240347459508664,
+     "sens_plus0015_ev": 0.33403474595086635,
+     "sens_plus005_ev": 0.2990347459508664,
+     "sens_plus010_ev": 0.24903474595086636,
+     "concentration": {
+      "n_positive": 16,
+      "total_positive": 34.98005417989755,
+      "top1_share": 0.24871316537296112,
+      "top5_share": 0.723594707853395,
+      "top10_share": 0.9536339674316601,
+      "best_day": "2026-11-16",
+      "worst_day": "2026-11-05",
+      "leave_best_day_out_ev": 0.1872256378063267,
+      "leave_worst_day_out_ev": 0.4407794564118221,
+      "leave_one_day_out_ev": 0.1872256378063267
+     }
+    },
+    "p8_flow_multi": {
+     "tag": "November_E2h",
+     "policy": "p8_flow_multi",
+     "trades": 81,
+     "eligible_tokens": 5980,
+     "days": 16,
+     "ev": -0.3200401850939121,
+     "total": -25.92325499260688,
+     "ev_floored": -0.19907840829124374,
+     "total_floored": -16.125351071590742,
+     "ci": [
+      -0.5097390349691373,
+      -0.0876234818126036
+     ],
+     "ci_floored": [
+      -0.3771006925373555,
+      0.021247130895866714
+     ],
+     "p_one": 0.9952004799520048,
+     "p_two": 0.009799020097990201,
+     "p_one_floored": 0.9653034696530347,
+     "de": 0.6772783598205012,
+     "eff_n": 81.0,
+     "halves": {
+      "Oct17_31": {
+       "trades": 81,
+       "ev": -0.3200401850939121
+      },
+      "Nov1_16": {
+       "trades": 81,
+       "ev": -0.3200401850939121
+      }
+     },
+     "policy_level_ev_per_eligible_token": -0.00433499247368008,
+     "policy_level_ci": [
+      -0.0074915154175022565,
+      -0.0010797342406874875
+     ],
+     "policy_level_p_one": 0.9952004799520048,
+     "paired_vs_flow": null,
+     "stress_c04_ev": -0.4200401850939121,
+     "stress_c04_ev_floored": -0.24589441540708906,
+     "realfee_ev": -0.0450401850939121,
+     "sens_plus0015_ev": -0.3350401850939121,
+     "sens_plus005_ev": -0.37004018509391207,
+     "sens_plus010_ev": -0.42004018509391206,
+     "concentration": {
+      "n_positive": 25,
+      "total_positive": 32.740158970277115,
+      "top1_share": 0.05192399956100797,
+      "top5_share": 0.25961999780503986,
+      "top10_share": 0.5192399956100797,
+      "best_day": "2026-11-05",
+      "worst_day": "2026-11-04",
+      "leave_best_day_out_ev": -0.37732721628526084,
+      "leave_worst_day_out_ev": -0.265125940066449,
+      "leave_one_day_out_ev": -0.37732721628526084
+     }
+    }
+   },
+   "n_oos_rows": 5980,
+   "n_eligible": 5980
+  },
+  "55s_E2h": {
+   "aggregates": {
+    "p1_hgb_tp3": {
+     "tag": "55s_E2h",
+     "policy": "p1_hgb_tp3",
+     "trades": 23,
+     "eligible_tokens": 16213,
+     "days": 30,
+     "ev": -0.45883661646442103,
+     "total": -10.553242178681684,
+     "ev_floored": -0.31979838264640525,
+     "total_floored": -7.35536280086732,
+     "ci": [
+      -0.9970337889286797,
+      0.15102692046258617
+     ],
+     "ci_floored": [
+      -0.7970525175436199,
+      0.250779900523522
+     ],
+     "p_one": 0.9343065693430657,
+     "p_two": 0.13158684131586842,
+     "p_one_floored": 0.8779122087791221,
+     "de": 1.6801587822499096,
+     "eff_n": 13.689182381441698,
+     "halves": {
+      "Oct2_16": {
+       "trades": 14,
+       "ev": -0.27969599475479484
+      },
+      "Oct17_31": {
+       "trades": 9,
+       "ev": -0.7374998057905059
+      }
+     },
+     "policy_level_ev_per_eligible_token": -0.0006509123653044893,
+     "policy_level_ci": [
+      -0.0015319213788567996,
+      0.00021681685968531465
+     ],
+     "policy_level_p_one": 0.9285071492850715,
+     "paired_vs_flow": {
+      "mean_diff": -0.41414440123951973,
+      "ci": [
+       -0.9678159434938034,
+       0.18591884686384585
+      ],
+      "p_one": 0.9173082691730827,
+      "p_two": 0.1655834416558344
+     },
+     "stress_c04_ev": -0.558836616464421,
+     "stress_c04_ev_floored": -0.36744993279457977,
+     "realfee_ev": -0.18383661646442098,
+     "sens_plus0015_ev": -0.47383661646442105,
+     "sens_plus005_ev": -0.508836616464421,
+     "sens_plus010_ev": -0.5588366164644211,
+     "concentration": {
+      "n_positive": 4,
+      "total_positive": 6.8,
+      "top1_share": 0.25,
+      "top5_share": 1.0,
+      "top10_share": 1.0,
+      "best_day": "2026-10-03",
+      "worst_day": "2026-10-24",
+      "leave_best_day_out_ev": -0.755763144620406,
+      "leave_worst_day_out_ev": -0.3337435722993846,
+      "leave_one_day_out_ev": -0.755763144620406
+     }
+    },
+    "p2_hgb_tp5": {
+     "tag": "55s_E2h",
+     "policy": "p2_hgb_tp5",
+     "trades": 52,
+     "eligible_tokens": 16213,
+     "days": 30,
+     "ev": -0.6974172080484752,
+     "total": -36.26569481852071,
+     "ev_floored": -0.5567382196051098,
+     "total_floored": -28.95038741946571,
+     "ci": [
+      -0.8720605624337894,
+      -0.5088603742023406
+     ],
+     "ci_floored": [
+      -0.6956951794846028,
+      -0.404275387866769
+     ],
+     "p_one": 1.0,
+     "p_two": 0.00019998000199980003,
+     "p_one_floored": 1.0,
+     "de": 1.1378271112429796,
+     "eff_n": 45.70114342168768,
+     "halves": {
+      "Oct2_16": {
+       "trades": 27,
+       "ev": -0.5969337938358025
+      },
+      "Oct17_31": {
+       "trades": 25,
+       "ev": -0.8059392953981619
+      }
+     },
+     "policy_level_ev_per_eligible_token": -0.002236828151392137,
+     "policy_level_ci": [
+      -0.0033391479440082,
+      -0.00131915142974991
+     ],
+     "policy_level_p_one": 1.0,
+     "paired_vs_flow": {
+      "mean_diff": -0.6800323167678601,
+      "ci": [
+       -0.8492401256478215,
+       -0.4979753719743892
+      ],
+      "p_one": 1.0,
+      "p_two": 0.00019998000199980003
+     },
+     "stress_c04_ev": -0.7974172080484752,
+     "stress_c04_ev_floored": -0.6085840975552639,
+     "realfee_ev": -0.4224172080484752,
+     "sens_plus0015_ev": -0.7124172080484752,
+     "sens_plus005_ev": -0.7474172080484752,
+     "sens_plus010_ev": -0.7974172080484752,
+     "concentration": {
+      "n_positive": 5,
+      "total_positive": 2.0029423393901773,
+      "top1_share": 0.4313232263284263,
+      "top5_share": 1.0,
+      "top10_share": 1.0,
+      "best_day": "2026-10-10",
+      "worst_day": "2026-10-13",
+      "leave_best_day_out_ev": -0.7478050067892575,
+      "leave_worst_day_out_ev": -0.6748222296020051,
+      "leave_one_day_out_ev": -0.7478050067892575
+     }
+    },
+    "p3_hgb_tp10": {
+     "tag": "55s_E2h",
+     "policy": "p3_hgb_tp10",
+     "trades": 45,
+     "eligible_tokens": 16213,
+     "days": 30,
+     "ev": -0.7638372660891275,
+     "total": -34.37267697401074,
+     "ev_floored": -0.552757565602658,
+     "total_floored": -24.87409045211961,
+     "ci": [
+      -1.0386340076508083,
+      -0.557784824179291
+     ],
+     "ci_floored": [
+      -0.8191060884132902,
+      -0.35117178115363584
+     ],
+     "p_one": 1.0,
+     "p_two": 0.00019998000199980003,
+     "p_one_floored": 1.0,
+     "de": 0.41889634799384223,
+     "eff_n": 45.0,
+     "halves": {
+      "Oct2_16": {
+       "trades": 22,
+       "ev": -0.7347748278543087
+      },
+      "Oct17_31": {
+       "trades": 23,
+       "ev": -0.7916361200528672
+      }
+     },
+     "policy_level_ev_per_eligible_token": -0.002120068893727918,
+     "policy_level_ci": [
+      -0.0030856072359052088,
+      -0.0012782918027848009
+     ],
+     "policy_level_p_one": 1.0,
+     "paired_vs_flow": {
+      "mean_diff": -0.7408420813622852,
+      "ci": [
+       -1.0107522276472483,
+       -0.5384964767794063
+      ],
+      "p_one": 1.0,
+      "p_two": 0.00019998000199980003
+     },
+     "stress_c04_ev": -0.8638372660891277,
+     "stress_c04_ev_floored": -0.5772020100471024,
+     "realfee_ev": -0.4888372660891274,
+     "sens_plus0015_ev": -0.7788372660891275,
+     "sens_plus005_ev": -0.8138372660891275,
+     "sens_plus010_ev": -0.8638372660891275,
+     "concentration": {
+      "n_positive": 6,
+      "total_positive": 11.568710433971924,
+      "top1_share": 0.4356372643793764,
+      "top5_share": 0.992370602856396,
+      "top10_share": 1.0,
+      "best_day": "2026-10-20",
+      "worst_day": "2026-10-02",
+      "leave_best_day_out_ev": -0.8320736853053383,
+      "leave_worst_day_out_ev": -0.850837842007124,
+      "leave_one_day_out_ev": -0.8320736853053383
+     }
+    },
+    "p4_flow_tp3": {
+     "tag": "55s_E2h",
+     "policy": "p4_flow_tp3",
+     "trades": 285,
+     "eligible_tokens": 16213,
+     "days": 30,
+     "ev": -0.534747556131075,
+     "total": -152.40305349735638,
+     "ev_floored": -0.37998064173480395,
+     "total_floored": -108.29448289441912,
+     "ci": [
+      -0.6879725463290365,
+      -0.3726445618968196
+     ],
+     "ci_floored": [
+      -0.5195413781806968,
+      -0.23046425930565714
+     ],
+     "p_one": 1.0,
+     "p_two": 0.00019998000199980003,
+     "p_one_floored": 1.0,
+     "de": 1.4361677893026346,
+     "eff_n": 198.44477930979676,
+     "halves": {
+      "Oct2_16": {
+       "trades": 163,
+       "ev": -0.3754752925960067
+      },
+      "Oct17_31": {
+       "trades": 122,
+       "ev": -0.7475457442967811
+      }
+     },
+     "policy_level_ev_per_eligible_token": -0.009400052642777795,
+     "policy_level_ci": [
+      -0.013044495404845605,
+      -0.006100352156312738
+     ],
+     "policy_level_p_one": 1.0,
+     "paired_vs_flow": null,
+     "stress_c04_ev": -0.634747556131075,
+     "stress_c04_ev_floored": -0.4164175890287034,
+     "realfee_ev": -0.25974755613107503,
+     "sens_plus0015_ev": -0.5497475561310751,
+     "sens_plus005_ev": -0.5847475561310751,
+     "sens_plus010_ev": -0.634747556131075,
+     "concentration": {
+      "n_positive": 65,
+      "total_positive": 95.22496418437456,
+      "top1_share": 0.017852461427115482,
+      "top5_share": 0.08926230713557741,
+      "top10_share": 0.17852461427115482,
+      "best_day": "2026-10-12",
+      "worst_day": "2026-10-21",
+      "leave_best_day_out_ev": -0.5630153095847646,
+      "leave_worst_day_out_ev": -0.49848535699591706,
+      "leave_one_day_out_ev": -0.5630153095847646
+     }
+    },
+    "p5_flow_tp5": {
+     "tag": "55s_E2h",
+     "policy": "p5_flow_tp5",
+     "trades": 247,
+     "eligible_tokens": 16213,
+     "days": 30,
+     "ev": -0.5591042755626953,
+     "total": -138.09875606398572,
+     "ev_floored": -0.3849562329588933,
+     "total_floored": -95.08418954084665,
+     "ci": [
+      -0.7563034647958807,
+      -0.3465380551525933
+     ],
+     "ci_floored": [
+      -0.5684850237010628,
+      -0.18341219925580254
+     ],
+     "p_one": 1.0,
+     "p_two": 0.00019998000199980003,
+     "p_one_floored": 0.9999000099990001,
+     "de": 1.265041391889294,
+     "eff_n": 195.2505282306331,
+     "halves": {
+      "Oct2_16": {
+       "trades": 138,
+       "ev": -0.41601885021192675
+      },
+      "Oct17_31": {
+       "trades": 109,
+       "ev": -0.7402583003187139
+      }
+     },
+     "policy_level_ev_per_eligible_token": -0.008517779316843627,
+     "policy_level_ci": [
+      -0.012436709081848187,
+      -0.00485891628495575
+     ],
+     "policy_level_p_one": 1.0,
+     "paired_vs_flow": null,
+     "stress_c04_ev": -0.6591042755626951,
+     "stress_c04_ev_floored": -0.4144482571644048,
+     "realfee_ev": -0.28410427556269524,
+     "sens_plus0015_ev": -0.5741042755626953,
+     "sens_plus005_ev": -0.6091042755626953,
+     "sens_plus010_ev": -0.6591042755626952,
+     "concentration": {
+      "n_positive": 42,
+      "total_positive": 97.21898845467004,
+      "top1_share": 0.03805840874105768,
+      "top5_share": 0.1902920437052884,
+      "top10_share": 0.38058408741057687,
+      "best_day": "2026-10-12",
+      "worst_day": "2026-10-21",
+      "leave_best_day_out_ev": -0.606259030238411,
+      "leave_worst_day_out_ev": -0.5159522574080931,
+      "leave_one_day_out_ev": -0.606259030238411
+     }
+    },
+    "p6_flow_tp10": {
+     "tag": "55s_E2h",
+     "policy": "p6_flow_tp10",
+     "trades": 247,
+     "eligible_tokens": 16213,
+     "days": 30,
+     "ev": -0.6429872874486962,
+     "total": -158.81785999982796,
+     "ev_floored": -0.4609755376557733,
+     "total_floored": -113.86095780097601,
+     "ci": [
+      -0.8201341388786126,
+      -0.4275241986139642
+     ],
+     "ci_floored": [
+      -0.6282310805812977,
+      -0.25560059344804886
+     ],
+     "p_one": 1.0,
+     "p_two": 0.00019998000199980003,
+     "p_one_floored": 1.0,
+     "de": 0.9417201755378646,
+     "eff_n": 247.0,
+     "halves": {
+      "Oct2_16": {
+       "trades": 138,
+       "ev": -0.5589443871290009
+      },
+      "Oct17_31": {
+       "trades": 109,
+       "ev": -0.7493902254681268
+      }
+     },
+     "policy_level_ev_per_eligible_token": -0.009795710849307837,
+     "policy_level_ci": [
+      -0.013663155788565662,
+      -0.0059368510661782295
+     ],
+     "policy_level_p_one": 1.0,
+     "paired_vs_flow": null,
+     "stress_c04_ev": -0.7429872874486962,
+     "stress_c04_ev_floored": -0.4876335537641189,
+     "realfee_ev": -0.36798728744869624,
+     "sens_plus0015_ev": -0.6579872874486962,
+     "sens_plus005_ev": -0.6929872874486962,
+     "sens_plus010_ev": -0.7429872874486961,
+     "concentration": {
+      "n_positive": 34,
+      "total_positive": 86.19984069912152,
+      "top1_share": 0.1009282607652042,
+      "top5_share": 0.4276088088194858,
+      "top10_share": 0.7129173374558893,
+      "best_day": "2026-10-12",
+      "worst_day": "2026-10-21",
+      "leave_best_day_out_ev": -0.6997217322252637,
+      "leave_worst_day_out_ev": -0.6060353179987116,
+      "leave_one_day_out_ev": -0.6997217322252637
+     }
+    },
+    "p7_hgb_multi": {
+     "tag": "55s_E2h",
+     "policy": "p7_hgb_multi",
+     "trades": 106,
+     "eligible_tokens": 16213,
+     "days": 30,
+     "ev": -0.650391470990734,
+     "total": -68.9414959250178,
+     "ev_floored": -0.4838050640714165,
+     "total_floored": -51.28333679157015,
+     "ci": [
+      -0.8618333690384112,
+      -0.4472749007187491
+     ],
+     "ci_floored": [
+      -0.6777352809182164,
+      -0.2950366166620524
+     ],
+     "p_one": 1.0,
+     "p_two": 0.00019998000199980003,
+     "p_one_floored": 1.0,
+     "de": 1.0894458187770273,
+     "eff_n": 97.29717455705304,
+     "halves": {
+      "Oct2_16": {
+       "trades": 57,
+       "ev": -0.5849177096605015
+      },
+      "Oct17_31": {
+       "trades": 49,
+       "ev": -0.7265548260075348
+      }
+     },
+     "policy_level_ev_per_eligible_token": -0.004252235608771838,
+     "policy_level_ci": [
+      -0.005822022430661626,
+      -0.002718449579142131
+     ],
+     "policy_level_p_one": 1.0,
+     "paired_vs_flow": {
+      "mean_diff": -0.6309319968126147,
+      "ci": [
+       -0.8369644193671495,
+       -0.43107136071021734
+      ],
+      "p_one": 1.0,
+      "p_two": 0.00019998000199980003
+     },
+     "stress_c04_ev": -0.750391470990734,
+     "stress_c04_ev_floored": -0.5243332306130016,
+     "realfee_ev": -0.3753914709907339,
+     "sens_plus0015_ev": -0.665391470990734,
+     "sens_plus005_ev": -0.7003914709907341,
+     "sens_plus010_ev": -0.750391470990734,
+     "concentration": {
+      "n_positive": 15,
+      "total_positive": 20.3716527733621,
+      "top1_share": 0.24739089272337544,
+      "top5_share": 0.6609279276298168,
+      "top10_share": 0.9548457425570739,
+      "best_day": "2026-10-03",
+      "worst_day": "2026-10-13",
+      "leave_best_day_out_ev": -0.7194614229436663,
+      "leave_worst_day_out_ev": -0.6301382521721304,
+      "leave_one_day_out_ev": -0.7194614229436663
+     }
+    },
+    "p8_flow_multi": {
+     "tag": "55s_E2h",
+     "policy": "p8_flow_multi",
+     "trades": 285,
+     "eligible_tokens": 16213,
+     "days": 30,
+     "ev": -0.534747556131075,
+     "total": -152.40305349735638,
+     "ev_floored": -0.37998064173480395,
+     "total_floored": -108.29448289441912,
+     "ci": [
+      -0.6879725463290365,
+      -0.3726445618968196
+     ],
+     "ci_floored": [
+      -0.5195413781806968,
+      -0.23046425930565714
+     ],
+     "p_one": 1.0,
+     "p_two": 0.00019998000199980003,
+     "p_one_floored": 1.0,
+     "de": 1.4361677893026346,
+     "eff_n": 198.44477930979676,
+     "halves": {
+      "Oct2_16": {
+       "trades": 163,
+       "ev": -0.3754752925960067
+      },
+      "Oct17_31": {
+       "trades": 122,
+       "ev": -0.7475457442967811
+      }
+     },
+     "policy_level_ev_per_eligible_token": -0.009400052642777795,
+     "policy_level_ci": [
+      -0.013044495404845605,
+      -0.006100352156312738
+     ],
+     "policy_level_p_one": 1.0,
+     "paired_vs_flow": null,
+     "stress_c04_ev": -0.634747556131075,
+     "stress_c04_ev_floored": -0.4164175890287034,
+     "realfee_ev": -0.25974755613107503,
+     "sens_plus0015_ev": -0.5497475561310751,
+     "sens_plus005_ev": -0.5847475561310751,
+     "sens_plus010_ev": -0.634747556131075,
+     "concentration": {
+      "n_positive": 65,
+      "total_positive": 95.22496418437456,
+      "top1_share": 0.017852461427115482,
+      "top5_share": 0.08926230713557741,
+      "top10_share": 0.17852461427115482,
+      "best_day": "2026-10-12",
+      "worst_day": "2026-10-21",
+      "leave_best_day_out_ev": -0.5630153095847646,
+      "leave_worst_day_out_ev": -0.49848535699591706,
+      "leave_one_day_out_ev": -0.5630153095847646
+     }
+    }
+   },
+   "n_oos_rows": 16213,
+   "n_eligible": 16213
+  }
+ },
+ "holm_M8": {
+  "policies": [
+   "p1_hgb_tp3",
+   "p2_hgb_tp5",
+   "p3_hgb_tp10",
+   "p4_flow_tp3",
+   "p5_flow_tp5",
+   "p6_flow_tp10",
+   "p7_hgb_multi",
+   "p8_flow_multi"
+  ],
+  "p_one_sided": [
+   0.9993000699930007,
+   0.9164083591640836,
+   0.9297070292970703,
+   1.0,
+   1.0,
+   1.0,
+   0.9907009299070093,
+   1.0
+  ],
+  "holm_adjusted": [
+   1.0,
+   1.0,
+   1.0,
+   1.0,
+   1.0,
+   1.0,
+   1.0,
+   1.0
+  ],
+  "note": "One-sided p (H1: EV>0), Phipson-Smyth corrected; Holm over M=8 (merge \u00a73.6)."
+ },
+ "bar_primary": {
+  "p1_hgb_tp3": {
+   "unfloored": {
+    "1_ev_pos_and_ci_lower_pos": false,
+    "2_both_halves_pos": false,
+    "3_neff_ge_2500": false,
+    "4_paired_pos": false,
+    "5_flat040_pos": false,
+    "6_holm_p_lt_05": false,
+    "7_implementable": true,
+    "8_guards": false
+   },
+   "floored": {
+    "1_ev_pos_and_ci_lower_pos": false,
+    "2_both_halves_pos": false,
+    "3_neff_ge_2500": false,
+    "4_paired_pos": false,
+    "5_flat040_pos": false,
+    "6_holm_p_lt_05": false,
+    "7_implementable": true,
+    "8_guards": false
+   },
+   "edge_unfloored": false,
+   "edge_floored": false,
+   "guards": {
+    "november_trades": 15,
+    "november_ev": 0.26126007261604006,
+    "november_non_reversal": false,
+    "leave_one_day_out_ev": -0.7977673435850072,
+    "leave_one_day_out_pos": false,
+    "pooled_oct_nov_ci_lower": -0.7439487895730219
+   }
+  },
+  "p2_hgb_tp5": {
+   "unfloored": {
+    "1_ev_pos_and_ci_lower_pos": false,
+    "2_both_halves_pos": false,
+    "3_neff_ge_2500": false,
+    "4_paired_pos": false,
+    "5_flat040_pos": false,
+    "6_holm_p_lt_05": false,
+    "7_implementable": true,
+    "8_guards": false
+   },
+   "floored": {
+    "1_ev_pos_and_ci_lower_pos": false,
+    "2_both_halves_pos": false,
+    "3_neff_ge_2500": false,
+    "4_paired_pos": false,
+    "5_flat040_pos": false,
+    "6_holm_p_lt_05": false,
+    "7_implementable": true,
+    "8_guards": false
+   },
+   "edge_unfloored": false,
+   "edge_floored": false,
+   "guards": {
+    "november_trades": 30,
+    "november_ev": -0.08151467886471968,
+    "november_non_reversal": false,
+    "leave_one_day_out_ev": -0.40267465889615844,
+    "leave_one_day_out_pos": false,
+    "pooled_oct_nov_ci_lower": -0.42417351808501486
+   }
+  },
+  "p3_hgb_tp10": {
+   "unfloored": {
+    "1_ev_pos_and_ci_lower_pos": false,
+    "2_both_halves_pos": false,
+    "3_neff_ge_2500": false,
+    "4_paired_pos": false,
+    "5_flat040_pos": false,
+    "6_holm_p_lt_05": false,
+    "7_implementable": true,
+    "8_guards": false
+   },
+   "floored": {
+    "1_ev_pos_and_ci_lower_pos": false,
+    "2_both_halves_pos": false,
+    "3_neff_ge_2500": false,
+    "4_paired_pos": false,
+    "5_flat040_pos": false,
+    "6_holm_p_lt_05": false,
+    "7_implementable": true,
+    "8_guards": false
+   },
+   "edge_unfloored": false,
+   "edge_floored": false,
+   "guards": {
+    "november_trades": 13,
+    "november_ev": 1.1068601597296215,
+    "november_non_reversal": false,
+    "leave_one_day_out_ev": -0.8663008092773401,
+    "leave_one_day_out_pos": false,
+    "pooled_oct_nov_ci_lower": -0.7280776126284974
+   }
+  },
+  "p4_flow_tp3": {
+   "unfloored": {
+    "1_ev_pos_and_ci_lower_pos": false,
+    "2_both_halves_pos": false,
+    "3_neff_ge_2500": false,
+    "4_paired_pos": false,
+    "5_flat040_pos": false,
+    "6_holm_p_lt_05": false,
+    "7_implementable": true,
+    "8_guards": false
+   },
+   "floored": {
+    "1_ev_pos_and_ci_lower_pos": false,
+    "2_both_halves_pos": false,
+    "3_neff_ge_2500": false,
+    "4_paired_pos": false,
+    "5_flat040_pos": false,
+    "6_holm_p_lt_05": false,
+    "7_implementable": true,
+    "8_guards": false
+   },
+   "edge_unfloored": false,
+   "edge_floored": false,
+   "guards": {
+    "november_trades": 81,
+    "november_ev": -0.3200401850939121,
+    "november_non_reversal": false,
+    "leave_one_day_out_ev": -0.6460151536432229,
+    "leave_one_day_out_pos": false,
+    "pooled_oct_nov_ci_lower": -0.6845800399170269
+   }
+  },
+  "p5_flow_tp5": {
+   "unfloored": {
+    "1_ev_pos_and_ci_lower_pos": false,
+    "2_both_halves_pos": false,
+    "3_neff_ge_2500": false,
+    "4_paired_pos": false,
+    "5_flat040_pos": false,
+    "6_holm_p_lt_05": false,
+    "7_implementable": true,
+    "8_guards": false
+   },
+   "floored": {
+    "1_ev_pos_and_ci_lower_pos": false,
+    "2_both_halves_pos": false,
+    "3_neff_ge_2500": false,
+    "4_paired_pos": false,
+    "5_flat040_pos": false,
+    "6_holm_p_lt_05": false,
+    "7_implementable": true,
+    "8_guards": false
+   },
+   "edge_unfloored": false,
+   "edge_floored": false,
+   "guards": {
+    "november_trades": 75,
+    "november_ev": -0.30193690663091094,
+    "november_non_reversal": false,
+    "leave_one_day_out_ev": -0.6833102306349457,
+    "leave_one_day_out_pos": false,
+    "pooled_oct_nov_ci_lower": -0.7237988125355813
+   }
+  },
+  "p6_flow_tp10": {
+   "unfloored": {
+    "1_ev_pos_and_ci_lower_pos": false,
+    "2_both_halves_pos": false,
+    "3_neff_ge_2500": false,
+    "4_paired_pos": false,
+    "5_flat040_pos": false,
+    "6_holm_p_lt_05": false,
+    "7_implementable": true,
+    "8_guards": false
+   },
+   "floored": {
+    "1_ev_pos_and_ci_lower_pos": false,
+    "2_both_halves_pos": false,
+    "3_neff_ge_2500": false,
+    "4_paired_pos": false,
+    "5_flat040_pos": false,
+    "6_holm_p_lt_05": false,
+    "7_implementable": true,
+    "8_guards": false
+   },
+   "edge_unfloored": false,
+   "edge_floored": false,
+   "guards": {
+    "november_trades": 75,
+    "november_ev": -0.2831383253401537,
+    "november_non_reversal": false,
+    "leave_one_day_out_ev": -0.7704478888983793,
+    "leave_one_day_out_pos": false,
+    "pooled_oct_nov_ci_lower": -0.7860557933191551
+   }
+  },
+  "p7_hgb_multi": {
+   "unfloored": {
+    "1_ev_pos_and_ci_lower_pos": false,
+    "2_both_halves_pos": false,
+    "3_neff_ge_2500": false,
+    "4_paired_pos": false,
+    "5_flat040_pos": false,
+    "6_holm_p_lt_05": false,
+    "7_implementable": true,
+    "8_guards": false
+   },
+   "floored": {
+    "1_ev_pos_and_ci_lower_pos": false,
+    "2_both_halves_pos": false,
+    "3_neff_ge_2500": false,
+    "4_paired_pos": false,
+    "5_flat040_pos": false,
+    "6_holm_p_lt_05": false,
+    "7_implementable": true,
+    "8_guards": false
+   },
+   "edge_unfloored": false,
+   "edge_floored": false,
+   "guards": {
+    "november_trades": 49,
+    "november_ev": 0.34903474595086637,
+    "november_non_reversal": false,
+    "leave_one_day_out_ev": -0.6827756731343698,
+    "leave_one_day_out_pos": false,
+    "pooled_oct_nov_ci_lower": -0.5004815980728807
+   }
+  },
+  "p8_flow_multi": {
+   "unfloored": {
+    "1_ev_pos_and_ci_lower_pos": false,
+    "2_both_halves_pos": false,
+    "3_neff_ge_2500": false,
+    "4_paired_pos": false,
+    "5_flat040_pos": false,
+    "6_holm_p_lt_05": false,
+    "7_implementable": true,
+    "8_guards": false
+   },
+   "floored": {
+    "1_ev_pos_and_ci_lower_pos": false,
+    "2_both_halves_pos": false,
+    "3_neff_ge_2500": false,
+    "4_paired_pos": false,
+    "5_flat040_pos": false,
+    "6_holm_p_lt_05": false,
+    "7_implementable": true,
+    "8_guards": false
+   },
+   "edge_unfloored": false,
+   "edge_floored": false,
+   "guards": {
+    "november_trades": 81,
+    "november_ev": -0.3200401850939121,
+    "november_non_reversal": false,
+    "leave_one_day_out_ev": -0.6460151536432229,
+    "leave_one_day_out_pos": false,
+    "pooled_oct_nov_ci_lower": -0.6845800399170269
+   }
+  }
+ },
+ "audit_pass": true,
+ "selftest_prediction": {
+  "status": "PASS",
+  "day": "2026-10-02",
+  "mint": "2mTAy2ovMFtfgNBPqJ9yMsiujFdwH71xS3xAUEq5pump",
+  "ev_hat_by_tp": {
+   "3": -0.12129826571506874,
+   "5": -0.23250903487934516,
+   "10": 0.4771777583719627
+  },
+  "recorded_EV_hat_best": 0.4771777583719627
+ }
+}
+---
+END OF BRIEF.
