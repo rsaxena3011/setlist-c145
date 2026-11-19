@@ -1,0 +1,129 @@
+# Tongal A&E Global Media — History Debunked Series Pitch: BRAINSTORM PANEL BRIEF (2026-11-19)
+
+## What this is
+
+You are one leg of a brainstorm panel. Your job: propose the strongest possible series concept and pitch-deck plan for a 30-minute episodic digital series debunking historical misconceptions, for A&E Global Media / History, on Tongal. The deliverable the boss will file is ONE pitch deck — not a video. Your output is thinking only: concepts, format, episode beats, deck structure, synopsis, links, disclosures, risks.
+
+## Rules — read first, they bind you
+
+1. Rule ONLY from this brief. NO web search. Do not open the Tongal page or any other site. Everything you need is in the verbatim recon below.
+2. Quote the recon figures verbatim. Do not invent a prize, a deadline, a page count, a slide count, or a video fund. The fund is $6,000 total = Pitch 3x $2,000 and there is NO video fund on the page. The deadline is Nov 25, 2026, 01:30 IST. Target submission day is Nov 22–23.
+3. The sample episode MUST focus on Vikings. The format MUST show repeatability across other periods.
+4. The format must be an ownable device/format, not interview / expert-reacts. Hot Ones-style escalation is the cited model; Wired Autocomplete / Technique Critique energy is the cited tone reference.
+5. Relatively low lift; if live action, studio-based. Audience: History fans, intellectually curious viewers, 18–29. Tone: Fun, Entertaining, Engaging, Informative.
+6. AI rules are binding: AI-generated visual/audio assets are NOT allowed in final content. AI images/footage ARE allowed in pitch materials, with disclosure.
+7. Rights position — flag it honestly, do not overclaim: Rule 6 says a VIDEO entry becomes the sole property of Tongal or its sponsor on submission. This filing is a PITCH (deck) only. The $2,000 pitch award is paid on completing the Winner Affidavit and IP Assignment. Three creators advance to a pitch development phase; a greenlit pitch can lead to production, but no video figure exists.
+8. Boss context: Ratnesh Saxena, Head of Video Production, 10+ years, motion design + generative-AI workflows. His portfolio videos you may propose as the 3–5 links include the BriefGate demo, the SetList demo, and the PlotLock demo — you propose, the parent verifies each link resolves. Do NOT link a showreel.
+
+## Downstream discipline (what happens after your leg)
+
+After all three panel legs land, a merge coordinator will do its own take first and then run TWO full hostile review rounds on the merged concept before any deck is built. Nothing is final before the panel merge, and no deck is built before the merge + reviews pass. Your leg must therefore be specific enough to be merged and attacked: name the device, name the beats, name the slides, draft the actual words.
+
+## Verbatim recon
+
+The section below is the recon file RECON_2026-11-19.md reproduced byte-for-byte. It is the sole source of facts for this brief. Every figure in your answers must trace to it.
+
+# Tongal A&E Global Media — History Debunked Series Pitch: RECON 2026-11-19
+
+Source: live read of https://tongal.com/project/HistoryDebunkedSeriesPitch/ by browser task 60b7428b, 13:48–16:23 IST Nov 19, 2026. Read-only; nothing submitted, started or changed. Mail: Tongal Updates, Gmail 1a1f18d8451273fc, sent Nov 19 07:35 IST.
+
+## Fund
+- Project Fund: **$6,000 total = Pitch 3x $2,000**. Three creators selected, $2,000 each, paid on completing the Winner Affidavit and IP Assignment (Tongal payment schedule).
+- **No Video phase fund shown.** Timeline has only Pitch and Revisions phases. The most compelling pitch "will be greenlit by the Sponsor" and producers email next steps; a greenlit pitch can lead to actual production ("very real potential that we'd use your team for production") but no video figure exists.
+
+## Deadline
+- Page: "Deadline November 25th, 2026" (no time of day stated). Pitch window 11/18/26–11/25/26. Revisions window 12/05/26–12/19/26.
+- Mail's 12PM PT Nov 24 converts to **Nov 25 01:30 IST** — consistent with the page's Nov 25. Countdown showed 5 days remaining at ~10:46 UTC Nov 19.
+- Target submission day (standing rule, 6-day build): Nov 22–23.
+
+## Submission requirements (as stated on the page)
+Deliverable: **one pitch deck (.pdf and/or live deck, e.g. Canva, Google Slides), with concept renders and reference**. No page/slide count stated.
+- TEXT (REQUIRED): Pitch Synopsis, up to 500 characters, how you plan to approach and produce the deliverables. Title field required, 50 characters max.
+- TREATMENT (REQUIRED): detailed description of how you propose to execute all deliverables. Upload accepts jpg, png, gif, pdf, doc, docx, ppt, jpeg, svg.
+- LINKS (REQUIRED): links to 3–5 individual videos, most relevant first, role specified per video (producer, director, editor, artist, etc.). Do NOT include links to your showreel.
+- GENERATIVE AI USAGE DISCLOSURES (REQUIRED): three Yes/No dropdowns — (1) AI for writing/ideation, (2) AI for visuals/audio, (3) AI to generate links to past work.
+- PITCH VIDEO (Optional): supporting video, mov/mp4/avi/wmv/mpg/m4v.
+- Terms checkbox (required): agree to Tongal Terms of Service and Official Rules.
+- No budget needed unless specifically requested. All pitches remain private, even after selection.
+
+## Brief essentials
+- Series: 30-minute episodic digital series debunking historical misconceptions, primarily for YouTube. Each episode = one era/culture/subject tied to a well-known but mistaken pop-cultural factoid.
+- **Sample episode MUST be Vikings** (Medieval & Global History). Format must show repeatability across other periods.
+- Episode structure: three roughly 10-minute chapters/acts, separated by a tonally similar interstitial short series already in development with History.
+- Format: novel, entertaining, repeatable; ownable device/format (Hot Ones-style escalating device cited as the model); combine History's authority with Wired Autocomplete / Technique Critique energy; go beyond interview / expert-reacts.
+- Scale: relatively low lift; if live action, studio-based for repeatability and cost.
+- Audience: History fans, intellectually curious viewers, young men and women 18–29. Tone: Fun, Entertaining, Engaging, Informative.
+- Exposure: History's Website, Facebook, YouTube.
+- Future episode topics listed: Ancient Egypt, Rome, Gladiators, Greece; Vikings, Medieval Knights, Samurai, Pirates, Renaissance; Revolutionary War, Civil War, Cowboys; Victorian Society, Titanic, Roaring Twenties, Prohibition, WWII.
+- Banner: "HISTORY DEBUNKED: DIGITAL TO LINEAR SERIES PILOT PITCH DECK DEVELOPMENT".
+
+## AI rules (binding)
+- AI-generated visual/audio assets are **NOT allowed in final content**.
+- For pitch materials, AI-generated images and/or footage **are allowed** to support the pitch, with disclosure. Sponsor under no obligation to grant rights to use AI assets in final content.
+
+## Rights / eligibility
+- Worldwide. 13+ to enter. All work must be original, free of copyrighted material; third-party material needs full written licence/consent forms.
+- "BY SUBMITTING A VIDEO ENTRY, YOUR SUBMISSION IMMEDIATELY BECOMES THE SOLE PROPERTY OF TONGAL OR ITS SPONSOR." (Rule 6)
+- Sponsor entitled to reasonable revisions on finished Videos without additional compensation. Videos in English or subtitled. Must not portray Sponsor negatively. May not contact Sponsor employees.
+- Greenlit Video creators must provide Talent/Location/Music releases, headshot or photo ID for on-camera talent, plus all project files, editing sequences and a 1080p .mov master (ProRes, Animation, or Uncompressed) to claim earnings.
+- Assets provided: PrimalHouse Music, Slipstream, Universal Production Music; Storyblocks video clips/photos/AE templates at no charge for submissions (no audio from Storyblocks).
+
+## Competition / counts
+- Pitches submitted so far: **not shown anywhere on the page** (Submissions tab is the entry form, not a list).
+- Three creators advance to pitch development phase.
+
+## Next step
+- Boss's call: build the deck or skip. If build: brainstorm-first panel + two review rounds per standing rules; deck is the deliverable, sample episode Vikings.
+- Full brief also viewable via print link: https://api.tongal.com/dev/getProjectBrief.html?projectId=HistoryDebunkedSeriesPitch
+
+## Questions — answer all eight, in order
+
+Answer in this order. Lead with the verdict block, then Q1–Q8, then your weakness register.
+
+### Verdict block (first in your reply)
+
+- Recommended concept (one line, name it)
+- Runner-up concept (one line, name it)
+- One line: why the recommended concept beats the runner-up
+
+### Q1 — Series concept
+
+State the series concept in ONE sentence, then explain in under 120 words why it wins this pitch: why History greenlights it, why 18–29s watch it, why it is ownable.
+
+### Q2 — The ownable device / format
+
+Describe the format device in full: what it is, how it works in every episode, and how it ESCALATES across the three roughly 10-minute chapters/acts (the Hot Ones-style rising mechanism). Explain why it cannot be mistaken for interview / expert-reacts. Name the interstitial short series and how it is tonally similar to the main show.
+
+### Q3 — Vikings sample episode, beat by beat
+
+Lay out the sample episode minute by minute: the mistaken pop-cultural factoid it debunks, the three chapters (what happens in each, what the viewer learns, what the payoff is), where the interstitials fall, and the closing beat. Name the specific sources / evidence used (types of evidence, not invented quotes).
+
+### Q4 — Repeatability
+
+Map the same format onto TWO other periods from the recon's topic list (e.g. Ancient Egypt, Rome, Gladiators, Greece, Medieval Knights, Samurai, Pirates, Renaissance, Revolutionary War, Civil War, Cowboys, Victorian Society, Titanic, Roaring Twenties, Prohibition, WWII). For each: the factoid, the three-act shape, and the payoff. If the format does not map cleanly, say so — that is a finding, not a failure to answer.
+
+### Q5 — Deck structure, slide by slide
+
+Give the deck slide by slide: title, purpose, and content of each slide. State which slides need concept renders and what each render shows, and which need reference (still / clip / citation). Note on each AI-rendered slide that AI images are allowed in pitch materials with disclosure and NOT allowed in final content. No slide count is stated in the recon — propose a count and justify it.
+
+### Q6 — Synopsis and title
+
+Draft the Pitch Synopsis in full: at most 500 characters (count them and state the count). Then give three title options, each at most 50 characters (count each and state the counts).
+
+### Q7 — Links and AI disclosures
+
+Propose the 3–5 individual videos to link, most relevant first, with the boss's role on each (producer, director, editor, artist, etc.). Candidates include the BriefGate demo, the SetList demo, and the PlotLock demo; propose others only if you can name a real video from the brief's context — do not invent links or titles. Then answer the three generative-AI disclosure dropdowns (Yes/No): (1) AI for writing/ideation, (2) AI for visuals/audio, (3) AI to generate links to past work — with one line of reasoning for each.
+
+### Q8 — Risks and ranking
+
+List the real risks to this pitch (rights, AI rules, repeatability, production lift, audience fit, anything else), each with a mitigation or an honest "unmitigated" flag. Then rank every concept you proposed in this leg, best first, with a one-line reason per rank.
+
+## Weakness register (last in your reply)
+
+Numbered list of the weaknesses in your OWN recommended concept — the things the merge and the review rounds must fix or test. Be hostile to your own work. A leg with no weaknesses is a leg that did not think.
+
+## Delivery
+
+Verdict block first, then Q1–Q8, then the weakness register. Plain text, no web search, no invented figures. If a fact is not in the recon, mark it UNVERIFIED rather than filling it in.
+
+— END OF BRIEF —
