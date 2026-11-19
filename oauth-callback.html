@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BriefGate Uploader — Authorization Code</title>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 640px; margin: 40px auto; padding: 0 16px; color: #111; }
+  h1 { font-size: 22px; }
+  p { line-height: 1.5; }
+  #code { font-size: 20px; font-weight: bold; word-break: break-all; background: #f2f2f2; border: 2px solid #111; border-radius: 8px; padding: 16px; margin: 16px 0; }
+  button { font-size: 18px; padding: 12px 20px; border-radius: 8px; border: none; background: #111; color: #fff; cursor: pointer; }
+  #err { color: #b00020; font-weight: bold; }
+  .note { color: #555; font-size: 14px; }
+</style>
+</head>
+<body>
+<h1>BriefGate Uploader — Authorization Code</h1>
+<p id="msg">Reading the authorization code…</p>
+<div id="code" style="display:none"></div>
+<button id="copy" style="display:none">Copy code</button>
+<p id="err"></p>
+<p class="note">This code lets Doom upload the BriefGate v3.2 demo to the Strange Sightings channel via the YouTube API. It expires in about 10 minutes and works only once. Copy it and send it to Doom in chat. Nothing else on this page is needed.</p>
+<script>
+  var params = new URLSearchParams(window.location.search);
+  var code = params.get('code');
+  var err = params.get('error');
+  var msg = document.getElementById('msg');
+  var box = document.getElementById('code');
+  var btn = document.getElementById('copy');
+  var errEl = document.getElementById('err');
+  if (code) {
+    msg.textContent = 'Tap Copy, then paste the code to Doom in chat:';
+    box.textContent = code;
+    box.style.display = 'block';
+    btn.style.display = 'inline-block';
+    btn.onclick = function () {
+      if (navigator.clipboard) { navigator.clipboard.writeText(code); btn.textContent = 'Copied'; }
+    };
+  } else if (err) {
+    msg.textContent = 'Authorization did not complete.';
+    errEl.textContent = 'Error: ' + err + '. Tell Doom and he will send a fresh link.';
+  } else {
+    msg.textContent = 'No authorization code in this link. Open the link Doom sent you and tap Allow.';
+  }
+</script>
+</body>
+</html>
